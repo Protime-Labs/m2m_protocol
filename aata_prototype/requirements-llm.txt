@@ -1,0 +1,8 @@
+# Optional -- ONLY for the Anthropic integration (integrations/anthropic/).
+# The core prototype, its tests, and the offline demo need NONE of this.
+#
+#   pip install -r requirements-llm.txt
+#   export ANTHROPIC_API_KEY=...          # or: ant auth login
+#   AATA_LLM_BRAIN=1 python demos/demo_llm_agent.py
+#
+anthropic>=0.69

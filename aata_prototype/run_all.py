@@ -28,6 +28,8 @@ def main():
     run(os.path.join(HERE, "tests", "test_invariants.py"))
     banner("FLEET TESTS (heterogeneous-fleet guarantees)")
     run(os.path.join(HERE, "tests", "test_fleet.py"))
+    banner("LLM-AGENT TESTS (Claude-as-governed-workload guarantees, offline)")
+    run(os.path.join(HERE, "tests", "test_llm_agent.py"))
 
     for name, title in [
         ("demo_w2_birth", "W2 -- Agent Birth (attestation to capability)"),
@@ -38,6 +40,16 @@ def main():
     ]:
         banner(title)
         run(os.path.join(HERE, "demos", f"{name}.py"))
+
+    # The LLM demo is offline-forced here (env flag cleared) so the suite stays
+    # deterministic and network-free even if a developer has AATA_LLM_BRAIN set.
+    banner("LLM-AGENT CAPABILITY (Claude as governed workload -- offline illustration)")
+    saved = os.environ.pop("AATA_LLM_BRAIN", None)
+    try:
+        run(os.path.join(HERE, "demos", "demo_llm_agent.py"))
+    finally:
+        if saved is not None:
+            os.environ["AATA_LLM_BRAIN"] = saved
 
 
 if __name__ == "__main__":

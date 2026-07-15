@@ -153,6 +153,10 @@ class Gateway:
                 "task_id": task_id, "agent": agent_id, "tool": tool_name,
                 "actuation_class": tool.actuation_class,
                 "canonical_args": canon.canonical,
+                # Stated intent/rationale (canonicalized upstream) recorded as evidence
+                # only -- it never entered the verdict above (spec 10.1/10.8). An empty
+                # list keeps records identical for callers that pass no provenance.
+                "intent": out.provenance.get("context", []),
                 "policy_version": verdict.policy_version,
                 "verdict": verdict.decision, "rule_trace": verdict.rule_trace,
             })
