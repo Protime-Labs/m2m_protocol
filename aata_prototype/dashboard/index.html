@@ -245,6 +245,7 @@ svg.graph{display:block;min-width:900px;width:100%;height:auto}
   <section class="panel" id="p-workflows"></section>
   <section class="panel" id="p-intersections"></section>
   <section class="panel" id="p-fleet"></section>
+  <section class="panel" id="p-llm"></section>
   <section class="panel" id="p-evidence"></section>
 </main>
 
@@ -303,7 +304,7 @@ function renderStrip(){
 
 /* ---------- tabs ---------- */
 const TABS=[['overview','Overview'],['workflows','Workflows'],
-  ['intersections','Intersections'],['fleet','Fleet Ops'],['evidence','Evidence']];
+  ['intersections','Intersections'],['fleet','Fleet Ops'],['llm','LLM Governance'],['evidence','Evidence']];
 function renderTabs(){
   const t=$('#tabs');
   TABS.forEach(([id,lbl],i)=>{
@@ -789,6 +790,83 @@ function covpill(level,note){
     +`background:color-mix(in srgb,var(${COVVAR[level]}) 10%,transparent)">${esc(level)}</span>`;
 }
 let rosterFilter={type:'all',status:'all'};
+function renderLLM(){
+  const p=$('#p-llm'),G=D.llm_governance;
+  if(!G){p.innerHTML='<div class="card">No LLM-governance data — run export_evidence.py.</div>';return;}
+  p.innerHTML='';
+  const decCls = d => d==='allow'?'st-good':(d==='allow-degraded'?'st-warning':'st-critical');
+  const verCls = v => v==='benign'?'st-good':(v==='suspicious'?'st-warning':'st-critical');
+
+  // intro
+  p.appendChild(el('div','card',
+    `<div class="eyebrow">Anthropic API capability</div>
+     <h3 style="font-size:16px;margin-top:6px">Claude as the governed workload + an advisory semantic judge</h3>
+     <p class="lead">${esc(G.note)}</p>
+     <p class="lead" style="margin-top:8px"><b>Objective:</b> <span class="mono">${esc(G.objective)}</span></p>`));
+
+  // KPI tiles
+  const allowed=G.governed_calls.filter(c=>c.allowed).length;
+  const denied=G.governed_calls.length-allowed;
+  const flagged=G.judge.filter(j=>j.verdict!=='benign').length;
+  const kt=el('div','grid tiles');kt.style.marginTop='14px';
+  [['Governed calls',G.governed_calls.length,'every call transits C1'],
+   ['Allowed / denied',`${allowed} / ${denied}`,'deterministic syntactic gate'],
+   ['Judge flags',`${flagged} / ${G.judge.length}`,'advisory semantic signal'],
+   ['Semantic-gap',G.semantic_gap?'SURFACED':'—',G.semantic_gap?'allowed by gate, flagged by judge':''],
+   ['Evidence',G.chain.records,`chain ${G.chain.ok?'INTACT':'BROKEN'} · ${G.chain.judge_records} judge`],
+  ].forEach(([k,v,s])=>kt.appendChild(el('div','tile',
+    `<div class="k">${k}</div><div class="v mono">${esc(v)}</div><div class="sub">${esc(s)}</div>`)));
+  p.appendChild(kt);
+
+  // 1 · Governed calls (Slice 1)
+  p.appendChild(el('div','sec-title',
+    '<h2>1 · Governed tool calls (C1)</h2><p>each call is a gateway wrapper — the model cannot act un-gated; stated confidence feeds the kinetic gate; intent is recorded, never adjudicated</p>'));
+  const t1=el('table');
+  t1.innerHTML='<thead><tr><th>tool</th><th>arg</th><th>conf</th><th>gate</th><th>seq</th><th>note</th></tr></thead>';
+  const b1=el('tbody');
+  G.governed_calls.forEach(c=>{
+    const tr=el('tr');
+    tr.innerHTML=`<td class="mono">${esc(c.tool)}</td><td class="mono">${esc(c.arg)}</td>`+
+      `<td class="mono">${c.confidence.toFixed(2)}</td>`+
+      `<td class="mono ${decCls(c.decision)}">${esc(c.decision.toUpperCase())}</td>`+
+      `<td class="mono">${c.evidence_seq==null?'—':c.evidence_seq}</td>`+
+      `<td>${esc(c.note)}</td>`;
+    b1.appendChild(tr);
+  });
+  t1.appendChild(b1);p.appendChild(t1);
+
+  // 2 · Semantic judge (Slice 2)
+  p.appendChild(el('div','sec-title',
+    '<h2>2 · Advisory semantic judge (C11)</h2><p>Claude scores whether the stated intent matches the objective — recorded (C9) and corroboration-gated, never on the enforcement path</p>'));
+  const t2=el('table');
+  t2.innerHTML='<thead><tr><th>tool</th><th>arg</th><th>verdict</th><th>risk</th><th>reasons</th></tr></thead>';
+  const b2=el('tbody');
+  G.judge.forEach(j=>{
+    const tr=el('tr');
+    tr.innerHTML=`<td class="mono">${esc(j.tool)}</td><td class="mono">${esc(j.arg)}</td>`+
+      `<td class="mono ${verCls(j.verdict)}">${esc(j.verdict.toUpperCase())}</td>`+
+      `<td class="mono">${j.risk.toFixed(2)}</td>`+
+      `<td>${esc((j.reasons||[]).join('; '))}</td>`;
+    b2.appendChild(tr);
+  });
+  t2.appendChild(b2);p.appendChild(t2);
+
+  // 3 · The headline: semantic gap surfaced
+  const sg=G.semantic_gap;
+  if(sg){
+    p.appendChild(el('div','sec-title',
+      '<h2>3 · The semantic gap, surfaced (spec 10.1)</h2><p>the honest payoff — and its honest limit</p>'));
+    p.appendChild(el('div','card',
+      `<p class="lead"><span class="mono">${esc(sg.tool)}(${esc(sg.arg)})</span></p>
+       <div class="grid tiles" style="margin-top:12px">
+         <div class="tile"><div class="k">Syntactic gate</div><div class="v mono ${decCls(sg.gate_decision)}">${esc(sg.gate_decision.toUpperCase())}</div><div class="sub">who/what/scope — cannot see intent</div></div>
+         <div class="tile"><div class="k">Semantic judge</div><div class="v mono ${verCls(sg.judge_verdict)}">${esc(sg.judge_verdict.toUpperCase())} ${sg.judge_risk.toFixed(2)}</div><div class="sub">surfaces the intent</div></div>
+         <div class="tile"><div class="k">Response</div><div class="v mono st-warning">Tier ${sg.response_tier} ${esc(sg.response_tier_name)}</div><div class="sub">corroborated=${sg.corroborated}</div></div>
+       </div>
+       <p class="lead" style="margin-top:12px">${esc(sg.note)}</p>`));
+  }
+}
+
 function renderFleet(){
   const p=$('#p-fleet'),F=D.fleet;
   if(!F){p.innerHTML='<div class="card">No fleet data — run export_evidence.py.</div>';return;}
@@ -971,7 +1049,7 @@ $('#foot').innerHTML=`AATA reference prototype · data generated at logical tick
   Every figure is emitted by the running Python overlay (<span class="mono">export_evidence.py</span>).
   Prototype crypto is stdlib HMAC/BLAKE2 standing in for Biscuit/SPIRE/cosign — the security shape is faithful, the primitives are labelled swaps.`;
 renderStrip();renderTabs();renderFocusBar();
-renderOverview();renderWorkflows();renderIntersections();renderFleet();renderEvidence();
+renderOverview();renderWorkflows();renderIntersections();renderFleet();renderLLM();renderEvidence();
 renderFocusBar();               // ensure focus listeners fire once
 </script>
 </body>
