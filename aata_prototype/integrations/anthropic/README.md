@@ -63,6 +63,28 @@ arg/rationale, Claude returns `{risk, verdict, reasons}`. It is used honestly:
 
 Default model: `claude-haiku-4-5` (cheap, high-volume classification).
 
+## Red-team harness — validate the overlay, honestly
+
+[`redteam.py`](redteam.py) probes the overlay with **labeled adversaries** (covert channel
+→ C10, semantic-gap → C11 judge, over-confident kinetic → PDP, capability escalation → C5,
+recorder-outage → no-evidence-no-action, and a high-confidence covert kinetic) plus honest
+agents as false-positive controls. It **drives** the attacks and **observes** the overlay's
+autonomous response (the gateway already auto-fires hygiene on IOCs), then scores against
+ground truth (`demos/demo_redteam.py`):
+
+```
+detection recall : 1.00  (6/6 adversaries detected)
+precision        : 1.00  (honest false-positives: 0)
+malicious irreversible actions executed : 1   <- the characterized gap, reported not hidden
+```
+
+**Not a rigged all-green.** The high-confidence covert kinetic executes in connected mode
+before hygiene reacts (detected + evidenced) — a **characterized gap** (spec 10.7 seam), and
+its detection then elevates the threat level so the same attack is denied under sustained
+threat / isolation (the demo shows both). A real Claude adversary (live flavor) typically
+*refuses* an exfiltration goal outright — overlay-level red-teaming uses the deterministic
+harness, which doesn't depend on model cooperation.
+
 ## Model choice
 
 | Role | Model | Why |

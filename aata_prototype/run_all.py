@@ -32,6 +32,8 @@ def main():
     run(os.path.join(HERE, "tests", "test_llm_agent.py"))
     banner("SEMANTIC-JUDGE TESTS (advisory C11 intent classifier, offline)")
     run(os.path.join(HERE, "tests", "test_semantic_judge.py"))
+    banner("RED-TEAM TESTS (adversary probes + efficacy scorecard, offline)")
+    run(os.path.join(HERE, "tests", "test_redteam.py"))
 
     for name, title in [
         ("demo_w2_birth", "W2 -- Agent Birth (attestation to capability)"),
@@ -53,6 +55,8 @@ def main():
         run(os.path.join(HERE, "demos", "demo_llm_agent.py"))
         banner("SEMANTIC JUDGE (C11 advisory intent classifier -- offline stub)")
         run(os.path.join(HERE, "demos", "demo_semantic_judge.py"))
+        banner("RED-TEAM HARNESS (adversary probes + efficacy scorecard -- offline)")
+        run(os.path.join(HERE, "demos", "demo_redteam.py"))
     finally:
         if saved is not None:
             os.environ["AATA_LLM_BRAIN"] = saved

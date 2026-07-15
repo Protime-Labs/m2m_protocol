@@ -26,9 +26,11 @@ from integrations.anthropic.judge import (
     SemanticJudge,
     as_ioc,
 )
+from integrations.anthropic.redteam import ProbeResult, RedTeam
 
 __all__ = [
     "GovernedAgent", "ToolCallRecord", "build_tool_defs", "dispatch", "granted_tools",
     "LLMAgent", "LLMDisabled", "RunResult", "enabled", "DEFAULT_MODEL",
     "SemanticJudge", "JudgeVerdict", "as_ioc", "JUDGE_MODEL",
+    "RedTeam", "ProbeResult",
 ]
