@@ -1,0 +1,10 @@
+# Optional -- ONLY for real OpenTelemetry export (integrations/otel/).
+# The core prototype, its tests, and the offline demo need NONE of this;
+# offline, emissions go to an in-memory capture backend.
+#
+#   pip install -r requirements-otel.txt
+#   AATA_OTEL=1 python demos/demo_otel.py                    # spans -> console
+#   AATA_OTEL=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 python demos/demo_otel.py
+#
+opentelemetry-sdk>=1.20
+opentelemetry-exporter-otlp-proto-http>=1.20

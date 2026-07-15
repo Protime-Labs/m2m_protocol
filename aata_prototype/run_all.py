@@ -46,6 +46,7 @@ def main():
         ("SEMANTIC-JUDGE TESTS (advisory C11 intent classifier, offline)", "test_semantic_judge.py"),
         ("RED-TEAM TESTS (adversary probes + efficacy scorecard, offline)", "test_redteam.py"),
         ("GOVERNANCE-CONSOLE TESTS (C12 copilot, reads-only, offline)", "test_governance_console.py"),
+        ("OTEL TESTS (real-signal emission, additive, offline)", "test_otel.py"),
     ]:
         step(title, "tests", name)
 
@@ -58,20 +59,22 @@ def main():
     ]:
         step(title, "demos", f"{name}.py")
 
-    # The Anthropic-integration demos run OFFLINE-forced here (env flag cleared) so the
-    # suite stays deterministic and network-free even if a developer has AATA_LLM_BRAIN set.
-    saved = os.environ.pop("AATA_LLM_BRAIN", None)
+    # The integration demos run OFFLINE-forced here (env flags cleared) so the suite stays
+    # deterministic and network-free even if a developer has AATA_LLM_BRAIN / AATA_OTEL set.
+    saved = {k: os.environ.pop(k, None) for k in ("AATA_LLM_BRAIN", "AATA_OTEL")}
     try:
         for name, title in [
             ("demo_llm_agent", "LLM-AGENT CAPABILITY (Claude as governed workload -- offline)"),
             ("demo_semantic_judge", "SEMANTIC JUDGE (C11 advisory intent classifier -- offline)"),
             ("demo_redteam", "RED-TEAM HARNESS (adversary probes + efficacy scorecard -- offline)"),
             ("demo_governance_console", "GOVERNANCE CONSOLE (C12 copilot -- drafts, offline)"),
+            ("demo_otel", "OTEL EMISSION (real signal pipeline C8 -- offline capture)"),
         ]:
             step(title, "demos", f"{name}.py")
     finally:
-        if saved is not None:
-            os.environ["AATA_LLM_BRAIN"] = saved
+        for k, v in saved.items():
+            if v is not None:
+                os.environ[k] = v
 
     banner("SUITE RESULT")
     if _FAILURES:
