@@ -189,4 +189,4 @@ guarantees, intended for evaluation and pilot design.
 - **Production use** is granted only to **authorized participants in a Protime Consulting Inc. beta / pilot program** under a separate written agreement; any other production or commercial use (including offering it as a hosted/managed service) requires a **commercial license**.
 - **Auto-converts to open:** each released version becomes available under the **Apache License 2.0** on its Change Date (**2030-07-15** for v0.1.0, i.e. four years after release).
 
-© 2026 Protime Consulting Inc. For commercial or alternative licensing, contact the Licensor (see [`LICENSE`](LICENSE)).
+© 2026 Protime Consulting Inc. For commercial or alternative licensing, contact **info@protimeconsulting.com** (see [`LICENSE`](LICENSE)).
