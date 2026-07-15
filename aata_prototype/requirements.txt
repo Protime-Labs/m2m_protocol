@@ -1,0 +1,17 @@
+# AATA reference prototype -- RUNTIME DEPENDENCIES: none.
+# The prototype runs on the Python 3.10+ standard library alone.
+#
+#   python run_all.py
+#
+# ---------------------------------------------------------------------------
+# Optional production-swap packages (see README §5). Install only if you want
+# to replace a stdlib stand-in with the real tool named in the AATA spec:
+#
+#   biscuit-python     # C5  -- real Ed25519 offline-attenuable capability tokens
+#   cryptography       # C2/C4/C9 -- Ed25519 / X.509 / cosign-style signing
+#   opa (binary)       # C6  -- evaluate policy/constitution.rego natively
+#   spiffe / spire     # C2/C4 -- workload identity (runs as a sidecar/daemon)
+#   immudb             # C9  -- WORM ledger with cryptographic verification
+#   nats-py            # C8  -- JetStream leaf-node store-and-forward bus
+#
+# None are required to run the demos, tests, or the blackout drill.

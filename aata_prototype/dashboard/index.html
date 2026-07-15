@@ -1,0 +1,978 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AATA Trust Overlay Console</title>
+<script src="data.js"></script>
+<style>
+:root{
+  color-scheme: light dark;
+  --plane:#f4f5f7; --surface-1:#fcfcfd; --surface-2:#eef0f3; --surface-3:#e7eaef;
+  --ink:#0b0d10; --ink-2:#565b64; --ink-mut:#8a8f99;
+  --hair:rgba(11,13,16,.12); --hair-strong:rgba(11,13,16,.22); --grid:#e4e6ea;
+  --accent:#2a78d6; --accent-soft:#cde2fb;
+  --good:#0ca30c; --warning:#c07f00; --serious:#c2582f; --critical:#d03b3b;
+  --cell-primary:#2a78d6; --cell-support:#9ec5f4;
+  --p-gov:#4a3aa7; --p-trust:#2a78d6; --p-control:#eb6834; --p-obs:#c98a00; --p-data:#008300;
+  --mono:ui-monospace,"Cascadia Code","SF Mono",Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:10px; --r-sm:7px;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    --plane:#0c0e12; --surface-1:#14171d; --surface-2:#1b1f27; --surface-3:#222732;
+    --ink:#f2f4f8; --ink-2:#aeb4c0; --ink-mut:#7f8592;
+    --hair:rgba(255,255,255,.12); --hair-strong:rgba(255,255,255,.22); --grid:#22262e;
+    --accent:#3987e5; --accent-soft:#173257;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#e35a5a;
+    --cell-primary:#3987e5; --cell-support:#1c5cab;
+    --p-gov:#9085e9; --p-trust:#3987e5; --p-control:#e07a4a; --p-obs:#e0a83a; --p-data:#2ba32b;
+  }
+}
+:root[data-theme="dark"]{
+  --plane:#0c0e12; --surface-1:#14171d; --surface-2:#1b1f27; --surface-3:#222732;
+  --ink:#f2f4f8; --ink-2:#aeb4c0; --ink-mut:#7f8592;
+  --hair:rgba(255,255,255,.12); --hair-strong:rgba(255,255,255,.22); --grid:#22262e;
+  --accent:#3987e5; --accent-soft:#173257;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#e35a5a;
+  --cell-primary:#3987e5; --cell-support:#1c5cab;
+  --p-gov:#9085e9; --p-trust:#3987e5; --p-control:#e07a4a; --p-obs:#e0a83a; --p-data:#2ba32b;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--plane);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:640;letter-spacing:-.01em}
+a{color:var(--accent)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-mut);font-weight:600}
+
+/* ---- header / status strip ---- */
+header{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--plane) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
+.hwrap{max-width:1260px;margin:0 auto;padding:12px 22px}
+.brandrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:30px;height:30px;border-radius:8px;flex:none;position:relative;
+  background:linear-gradient(145deg,var(--accent),var(--p-gov))}
+.logo::after{content:"";position:absolute;inset:8px;border-radius:3px;
+  border:2px solid rgba(255,255,255,.85);border-right-color:transparent;
+  animation:spin 6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.logo::after{animation:none}}
+.brandtext b{font-size:16px;letter-spacing:-.02em}
+.brandtext span{display:block;font-size:11.5px;color:var(--ink-2)}
+.spacer{flex:1}
+.tgl{border:1px solid var(--hair);background:var(--surface-1);color:var(--ink-2);
+  border-radius:8px;padding:6px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+.tgl:hover{border-color:var(--hair-strong);color:var(--ink)}
+.strip{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.gauge{flex:1;min-width:150px;border:1px solid var(--hair);border-radius:var(--r);
+  background:var(--surface-1);padding:10px 13px;display:flex;flex-direction:column;gap:3px}
+.gauge .k{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mut)}
+.gauge .v{font-size:20px;font-weight:660;font-family:var(--mono);letter-spacing:-.02em;
+  display:flex;align-items:center;gap:8px}
+.gauge .sub{font-size:11.5px;color:var(--ink-2)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 0 3px color-mix(in srgb,currentColor 22%,transparent)}
+.st-good{color:var(--good)} .st-warning{color:var(--warning)}
+.st-serious{color:var(--serious)} .st-critical{color:var(--critical)}
+
+/* ---- tabs ---- */
+nav.tabs{max-width:1260px;margin:0 auto;padding:0 22px;display:flex;gap:2px;flex-wrap:wrap}
+.tab{border:none;background:none;font:inherit;font-size:13.5px;font-weight:560;color:var(--ink-2);
+  padding:12px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* ---- focus bar ---- */
+.focusbar{max-width:1260px;margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:10px;
+  font-size:12.5px;color:var(--ink-2);border-bottom:1px solid var(--hair);min-height:40px}
+.focuschip{display:inline-flex;align-items:center;gap:7px;background:var(--accent-soft);
+  color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);
+  border-radius:999px;padding:3px 6px 3px 10px;font-weight:600;font-family:var(--mono);font-size:12px}
+.focuschip button{border:none;background:color-mix(in srgb,var(--accent) 20%,transparent);
+  color:var(--accent);width:17px;height:17px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1}
+
+/* ---- layout ---- */
+main{max-width:1260px;margin:0 auto;padding:22px}
+.panel{display:none;animation:fade .25s ease}
+.panel.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+.grid{display:grid;gap:14px}
+.card{background:var(--surface-1);border:1px solid var(--hair);border-radius:var(--r);padding:16px 18px}
+.card h3{font-size:14.5px;display:flex;align-items:center;gap:9px}
+.card .lead{color:var(--ink-2);font-size:13px;margin:2px 0 0}
+.sec-title{display:flex;align-items:baseline;gap:12px;margin:26px 0 12px}
+.sec-title h2{font-size:17px}
+.sec-title p{margin:0;color:var(--ink-2);font-size:12.5px}
+
+/* ---- stat tiles ---- */
+.tiles{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.tile{background:var(--surface-1);border:1px solid var(--hair);border-radius:var(--r);padding:14px 15px}
+.tile .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-mut)}
+.tile .v{font-size:27px;font-weight:680;font-family:var(--mono);letter-spacing:-.02em;margin-top:5px}
+.tile .sub{font-size:12px;color:var(--ink-2);margin-top:2px}
+
+/* ---- component chips ---- */
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hair);border-radius:999px;
+  padding:3px 9px 3px 7px;font-size:12px;font-weight:560;cursor:pointer;background:var(--surface-1);
+  color:var(--ink);white-space:nowrap;transition:border-color .12s,background .12s}
+.chip:hover{border-color:var(--hair-strong)}
+.chip .cid{font-family:var(--mono);font-weight:680;font-size:11px}
+.chip .pdot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip.dim{opacity:.32} .chip.hit{border-color:var(--accent);background:var(--accent-soft)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;
+  border-radius:999px;border:1px solid var(--hair)}
+.disp-BUILD{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 40%,transparent)}
+.disp-EXTEND{color:var(--warning);border-color:color-mix(in srgb,var(--warning) 40%,transparent)}
+.disp-ADOPT{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+
+/* ---- tables / matrices ---- */
+.scroll{overflow-x:auto;border:1px solid var(--hair);border-radius:var(--r);background:var(--surface-1)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--hair);vertical-align:top}
+thead th{position:sticky;top:0;background:var(--surface-2);font-size:11px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-2);z-index:2;font-weight:600}
+tbody tr:hover{background:var(--surface-2)}
+td.mono,th.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* matrix */
+.matrix{font-size:12px}
+.matrix th.rot{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;
+  padding:8px 4px;font-family:var(--mono);text-transform:none;letter-spacing:0}
+.matrix th.rowh{position:sticky;left:0;background:var(--surface-2);z-index:3;text-transform:none;
+  font-weight:560;letter-spacing:0;min-width:190px}
+.matrix td{text-align:center;padding:0;height:34px;border-right:1px solid var(--hair)}
+.matrix td .mk{width:22px;height:22px;border-radius:6px;margin:auto;display:flex;align-items:center;
+  justify-content:center;font-size:10px;color:#fff;font-weight:700;font-family:var(--mono)}
+.mk.primary{background:var(--cell-primary)} .mk.support{background:var(--cell-support);color:#0b0d10}
+.mk.on{background:var(--good)}
+.matrix col.hl,.matrix td.colhl{background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.matrix tr.rowhl th.rowh,.matrix tr.rowhl td{background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.matrix tr.dim{opacity:.34}
+
+/* ---- workflow steps ---- */
+.wfbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.wfbtn{border:1px solid var(--hair);background:var(--surface-1);border-radius:8px;padding:8px 12px;
+  cursor:pointer;font:inherit;font-size:12.5px;color:var(--ink-2);display:flex;gap:8px;align-items:center}
+.wfbtn .wtag{font-family:var(--mono);font-weight:700}
+.wfbtn[aria-selected="true"]{border-color:var(--accent);color:var(--ink);background:var(--accent-soft)}
+.steps{display:flex;flex-direction:column;gap:0;counter-reset:s}
+.step{display:grid;grid-template-columns:34px 1fr;gap:14px;padding:11px 0;border-bottom:1px dashed var(--hair)}
+.step:last-child{border-bottom:none}
+.step .n{width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:1px solid var(--hair);
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700}
+.step.hl .n{background:var(--accent);color:#fff;border-color:var(--accent)}
+.step .act{font-size:13.5px;font-weight:540}
+.step .ev{font-size:12px;color:var(--ink-2);margin-top:2px;display:flex;gap:7px;align-items:center}
+.step .ev::before{content:"⤷";color:var(--good)}
+.step .cref{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);cursor:pointer}
+.trace{background:var(--surface-2);border:1px solid var(--hair);border-radius:var(--r-sm);
+  padding:11px 13px;font-family:var(--mono);font-size:11.5px;line-height:1.7;white-space:pre-wrap;
+  color:var(--ink-2);overflow-x:auto}
+.trace .verd{color:var(--critical);font-weight:700}
+
+/* ---- graph ---- */
+.graphwrap{overflow-x:auto;background:var(--surface-1);border:1px solid var(--hair);border-radius:var(--r)}
+svg.graph{display:block;min-width:900px;width:100%;height:auto}
+.gnode rect{stroke-width:1.5}
+.gnode text.id{font-family:var(--mono);font-weight:700;font-size:12px}
+.gnode text.nm{font-size:9.5px;fill:var(--ink-2)}
+.gnode{cursor:pointer}
+.gnode.dim{opacity:.22}
+.gedge{fill:none;stroke-width:1.6;opacity:.55}
+.gedge.dim{opacity:.06}
+.gedge.hl{opacity:1;stroke-width:2.6}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);padding:10px 14px;
+  border-top:1px solid var(--hair)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:16px;height:3px;border-radius:2px;display:inline-block}
+
+/* ---- evidence ---- */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.filters select,.filters input{font:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--hair);
+  border-radius:7px;background:var(--surface-1);color:var(--ink)}
+.kindtag{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;
+  background:var(--surface-3);color:var(--ink-2)}
+.kindtag.pre{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
+.kindtag.hyg{background:color-mix(in srgb,var(--critical) 16%,transparent);color:var(--critical)}
+.kindtag.birth{background:color-mix(in srgb,var(--p-gov) 16%,transparent);color:var(--p-gov)}
+.kindtag.mode{background:color-mix(in srgb,var(--warning) 18%,transparent);color:var(--warning)}
+.reclink{cursor:pointer}
+.payload{font-family:var(--mono);font-size:11px;color:var(--ink-2);white-space:pre-wrap;
+  background:var(--surface-2);padding:8px 10px;border-radius:6px;margin-top:6px}
+.tiers{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tierpill{font-size:11px;border:1px solid var(--hair);border-radius:999px;padding:3px 10px}
+.callout{border-left:3px solid var(--warning);background:color-mix(in srgb,var(--warning) 7%,transparent);
+  padding:12px 15px;border-radius:0 var(--r) var(--r) 0;font-size:13px}
+.callout b{color:var(--warning)}
+.two{grid-template-columns:1fr 1fr}
+@media(max-width:820px){.two{grid-template-columns:1fr}}
+.obar{display:flex;height:16px;border-radius:8px;overflow:hidden;gap:2px;background:var(--surface-2)}
+.obar div{min-width:2px}
+.alarm{border-left:3px solid var(--critical);background:color-mix(in srgb,var(--critical) 8%,transparent);
+  padding:12px 15px;border-radius:0 var(--r) var(--r) 0}
+.alarm b{color:var(--critical)}
+.probe{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+.probe .pc{flex:1;min-width:200px;border:1px solid var(--hair);border-radius:var(--r);padding:12px 14px;background:var(--surface-1)}
+.probe .verdict{font-family:var(--mono);font-weight:700;font-size:15px}
+.tbadge{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:middle;margin-right:6px}
+.muted{color:var(--ink-mut);font-size:12px}
+.foot{max-width:1260px;margin:10px auto 40px;padding:14px 22px;color:var(--ink-mut);font-size:11.5px;
+  border-top:1px solid var(--hair)}
+.actions{margin:6px 0 0;padding-left:18px;font-size:12px;color:var(--ink-2)}
+.actions li{margin:2px 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div class="brandrow">
+      <div class="logo" aria-hidden="true"></div>
+      <div class="brandtext"><b>AATA · Trust Overlay Console</b>
+        <span id="subtitle">Autonomous Agent Trust Architecture</span></div>
+      <div class="spacer"></div>
+      <button class="tgl" id="themebtn" type="button">◐ Theme</button>
+    </div>
+    <div class="strip" id="strip"></div>
+  </div>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+  <div class="focusbar" id="focusbar"></div>
+</header>
+
+<main>
+  <section class="panel on" id="p-overview"></section>
+  <section class="panel" id="p-workflows"></section>
+  <section class="panel" id="p-intersections"></section>
+  <section class="panel" id="p-fleet"></section>
+  <section class="panel" id="p-evidence"></section>
+</main>
+
+<div class="foot" id="foot"></div>
+
+<script>
+const D = window.AATA;
+const $ = (s,r=document)=>r.querySelector(s);
+const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const PLANE_VAR = {governance:'--p-gov',trust:'--p-trust',control:'--p-control',
+  observability:'--p-obs',dataplane:'--p-data'};
+const compById = Object.fromEntries(D.topology.components.map(c=>[c.id,c]));
+const short = h => h ? h.slice(0,10)+'…' : '';
+
+let focus = null;               // focused component id
+const listeners = [];           // re-render hooks on focus change
+function setFocus(id){ focus = (focus===id)?null:id; renderFocusBar(); listeners.forEach(f=>f()); }
+function onFocus(f){ listeners.push(f); }
+
+/* ---------- component chip ---------- */
+function chip(id,{plain=false}={}){
+  const c = compById[id]; if(!c) return el('span','mono',id);
+  const e = el('span','chip'+(plain?'':''),
+    `<span class="pdot" style="background:var(${PLANE_VAR[c.group]})"></span>`+
+    `<span class="cid">${id}</span>${plain?'':' '+esc(c.name)}`);
+  e.title = c.name+' — '+c.tool;
+  e.addEventListener('click',()=>setFocus(id));
+  onFocus(()=>{ e.classList.toggle('hit',focus===id); e.classList.toggle('dim',focus&&focus!==id); });
+  return e;
+}
+
+/* ---------- status strip ---------- */
+function tierStatus(t){return {CONNECTED:'good',DEGRADED:'warning',ISOLATED:'serious'}[t]||'good';}
+function renderStrip(){
+  const ev=D.evidence, s=$('#strip'); s.innerHTML='';
+  const chainOk = ev.chain.authoritative_ok && ev.chain.ledger_ok;
+  const gauges=[
+    {k:'DDIL Tier',v:ev.ddil_tier,cls:tierStatus(ev.ddil_tier),
+     sub:'Connected · Degraded · Isolated'},
+    {k:'Evidence chain',v:(chainOk?'INTACT':'BROKEN'),cls:chainOk?'good':'critical',
+     sub:`${ev.counts.authoritative_records} auth + ${ev.counts.ledger_records} ledger records`},
+    {k:'Threat level',v:ev.threat_level.toFixed(2),
+     cls:ev.threat_level>1.5?'serious':ev.threat_level>0?'warning':'good',
+     sub:'tightens PDP kinetic thresholds'},
+    {k:'Fleet',v:ev.counts.agents,cls:'good',
+     sub:`${ev.counts.iocs} IOC · ${ev.counts.incidents} incident`},
+  ];
+  gauges.forEach(g=>{
+    s.appendChild(el('div','gauge',
+      `<span class="k">${g.k}</span>`+
+      `<span class="v st-${g.cls}"><span class="dot" style="background:currentColor"></span>${esc(g.v)}</span>`+
+      `<span class="sub">${esc(g.sub)}</span>`));
+  });
+}
+
+/* ---------- tabs ---------- */
+const TABS=[['overview','Overview'],['workflows','Workflows'],
+  ['intersections','Intersections'],['fleet','Fleet Ops'],['evidence','Evidence']];
+function renderTabs(){
+  const t=$('#tabs');
+  TABS.forEach(([id,lbl],i)=>{
+    const b=el('button','tab',lbl); b.setAttribute('role','tab');
+    b.setAttribute('aria-selected',i===0?'true':'false');
+    b.addEventListener('click',()=>{
+      $$('.tab').forEach(x=>x.setAttribute('aria-selected','false'));
+      b.setAttribute('aria-selected','true');
+      $$('.panel').forEach(p=>p.classList.remove('on'));
+      $('#p-'+id).classList.add('on');
+    });
+    t.appendChild(b);
+  });
+}
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+
+/* ---------- focus bar ---------- */
+function renderFocusBar(){
+  const b=$('#focusbar'); b.innerHTML='';
+  if(!focus){
+    b.appendChild(el('span','',
+      '⌖ Click any component <b style="color:var(--ink)">C-id</b> anywhere to trace its intersections across every matrix, the handoff graph, and the workflows.'));
+    return;
+  }
+  const c=compById[focus];
+  b.appendChild(el('span','','Tracing intersections for'));
+  const ch=el('span','focuschip',
+    `<span class="pdot" style="width:8px;height:8px;border-radius:50%;background:var(${PLANE_VAR[c.group]})"></span>`+
+    `${focus} · ${esc(c.name)} <button title="clear">×</button>`);
+  ch.querySelector('button').addEventListener('click',()=>setFocus(focus));
+  b.appendChild(ch);
+  const ctrls = D.topology.controls.filter(x=>x.components.includes(focus)).length;
+  const wfs = new Set(D.intersections.component_workflow.filter(x=>x.comp===focus).map(x=>x.wf)).size;
+  const edges = D.intersections.graph.edges.filter(e=>e.from===focus||e.to===focus).length;
+  b.appendChild(el('span','muted',
+    `— ${ctrls} control(s) · ${wfs} workflow(s) · ${edges} handoff edge(s)`));
+}
+
+/* ================= OVERVIEW ================= */
+function renderOverview(){
+  const p=$('#p-overview'), ev=D.evidence; p.innerHTML='';
+  p.appendChild(el('div','card',
+    `<div class="eyebrow">What this console shows</div>
+     <h3 style="font-size:16px;margin-top:6px">A running trust overlay, its evidence, and the intersections it creates</h3>
+     <p class="lead">Every number below is emitted by the live prototype (${D.topology.components.length} components,
+     ${D.topology.workflows.length} workflows). The overlay wraps an unmodified agent estate and gates every
+     tool call: <b>nothing consequential happens without producing evidence first.</b></p>`));
+
+  const tiles=el('div','grid tiles'); tiles.style.marginTop='14px';
+  const T=[
+    ['Guarantee','no-evidence → no-action',ev.chain.authoritative_ok?'enforced this run':'FAILED'],
+    ['Flight records',ev.counts.authoritative_records,'hash-chained, WORM'],
+    ['Reconciliation ledger',ev.counts.ledger_records,`replayed ${ev.chain.ledger_replayed} on reconnect`],
+    ['Merkle anchor',short(ev.merkle_root),'external tamper anchor'],
+    ['Covert-channel IOCs',ev.counts.iocs,'C10 encoding/timing'],
+    ['Autonomous incidents',ev.counts.incidents,'C7 graduated hygiene'],
+  ];
+  T.forEach(([k,v,s])=>tiles.appendChild(el('div','tile',
+    `<div class="k">${k}</div><div class="v mono">${esc(v)}</div><div class="sub">${esc(s)}</div>`)));
+  p.appendChild(tiles);
+
+  // workflow entry cards
+  p.appendChild(el('div','sec-title','<h2>The four workflows</h2><p>every step emits a verifiable artifact</p>'));
+  const wg=el('div','grid two');
+  D.topology.workflows.forEach(w=>{
+    const c=el('div','card',
+      `<h3><span class="mono" style="color:var(--accent)">${w.id}</span> ${esc(w.name)}</h3>
+       <p class="lead">${w.steps.length} steps · primary ${w.primary}</p>`);
+    const row=el('div',''); row.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-top:10px';
+    w.components.forEach(id=>row.appendChild(chip(id,{plain:true})));
+    c.appendChild(row);
+    c.style.cursor='pointer';
+    c.addEventListener('click',(e)=>{ if(e.target.closest('.chip'))return;
+      $$('.tab')[1].click(); selectWorkflow(w.id); });
+    wg.appendChild(c);
+  });
+  p.appendChild(wg);
+
+  // plane legend
+  p.appendChild(el('div','sec-title','<h2>Five planes</h2><p>how the 12 components are organised</p>'));
+  const lg=el('div','grid');lg.style.gridTemplateColumns='repeat(auto-fit,minmax(210px,1fr))';
+  D.topology.planes.forEach(pl=>{
+    const comps=D.topology.components.filter(c=>c.group===pl.id);
+    const card=el('div','card');
+    card.appendChild(el('div','',
+      `<span class="eyebrow" style="color:var(${PLANE_VAR[pl.id]})">● ${esc(pl.name)}</span>`));
+    const r=el('div','');r.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-top:8px';
+    comps.forEach(c=>r.appendChild(chip(c.id,{plain:true})));
+    card.appendChild(r); lg.appendChild(card);
+  });
+  p.appendChild(lg);
+}
+
+/* ================= WORKFLOWS ================= */
+let curWf='W1';
+function selectWorkflow(id){ curWf=id; renderWorkflowBody();
+  $$('.wfbtn').forEach(b=>b.setAttribute('aria-selected',b.dataset.wf===id?'true':'false')); }
+function renderWorkflows(){
+  const p=$('#p-workflows');p.innerHTML='';
+  p.appendChild(el('div','sec-title',
+    '<h2>Workflow sequences</h2><p>each step names the component it touches and the evidence it produces</p>'));
+  const bar=el('div','wfbar');
+  D.topology.workflows.forEach(w=>{
+    const b=el('button','wfbtn',`<span class="wtag" style="color:var(--accent)">${w.id}</span>${esc(w.name)}`);
+    b.dataset.wf=w.id; b.setAttribute('aria-selected',w.id===curWf?'true':'false');
+    b.addEventListener('click',()=>selectWorkflow(w.id)); bar.appendChild(b);
+  });
+  p.appendChild(bar);
+  p.appendChild(el('div','',`<div id="wfbody"></div>`));
+  renderWorkflowBody();
+  // persistent focus wiring: re-highlight whichever steps are on screen
+  onFocus(()=>$$('#wfbody .step').forEach(s=>
+    s.classList.toggle('hl',focus&&s.dataset.comp===focus)));
+}
+function renderWorkflowBody(){
+  const w=D.topology.workflows.find(x=>x.id===curWf);
+  const host=$('#wfbody');host.innerHTML='';
+  const card=el('div','card');
+  card.appendChild(el('div','',
+    `<h3><span class="mono" style="color:var(--accent)">${w.id}</span> ${esc(w.name)}</h3>`));
+  const steps=el('div','steps');steps.style.marginTop='6px';
+  w.steps.forEach(s=>{
+    const row=el('div','step'+(focus&&s.comp===focus?' hl':''));
+    row.dataset.comp=s.comp;
+    const cn=el('div','');cn.appendChild(el('div','n',s.n));
+    const body=el('div','',
+      `<div class="act">${esc(s.action)} <span class="cref" data-c="${s.comp}">[${s.comp}]</span></div>
+       <div class="ev">${esc(s.evidence)}</div>`);
+    body.querySelector('.cref').addEventListener('click',()=>setFocus(s.comp));
+    row.appendChild(cn);row.appendChild(body);steps.appendChild(row);
+  });
+  card.appendChild(steps);host.appendChild(card);
+
+  // live traces for W1
+  if(curWf==='W1' && D.evidence.traces){
+    const tr=D.evidence.traces;
+    const tc=el('div','card');tc.style.marginTop='14px';
+    tc.appendChild(el('div','',`<div class="eyebrow">Captured live from the running gateway</div>`));
+    const mk=(title,arr,cls)=>{
+      const box=el('div','');box.style.marginTop='10px';
+      box.appendChild(el('div','',`<h3 style="font-size:13px">${title}</h3>`));
+      const t=el('div','trace');
+      t.innerHTML=(arr||[]).map(l=>{
+        const s=esc(l); return /FAIL-CLOSED|DENY|UNREACHABLE|IOC/.test(l)?`<span class="verd">${s}</span>`:s;
+      }).join('\n');
+      box.appendChild(t);return box;
+    };
+    if(tr.w1_clean) tc.appendChild(mk('Allowed informational read',tr.w1_clean));
+    if(tr.w1_failclosed) tc.appendChild(mk('Recorder unreachable → kinetic FAIL-CLOSED',tr.w1_failclosed));
+    if(tr.w1_covert) tc.appendChild(mk('Covert-channel payload → IOC raised',tr.w1_covert));
+    host.appendChild(tc);
+  }
+}
+
+/* ================= INTERSECTIONS ================= */
+function renderIntersections(){
+  const p=$('#p-intersections');p.innerHTML='';
+  p.appendChild(el('div','card',
+    `<div class="eyebrow">The intersections the architecture creates</div>
+     <h3 style="font-size:16px;margin-top:6px">Controls, components, workflows and threats cross in four ways</h3>
+     <p class="lead">Pick a component in any view — its row, column, graph node, and workflow steps light up
+     everywhere at once, so you can read the full blast radius of a single part.</p>`));
+
+  // A. component x workflow
+  p.appendChild(el('div','sec-title',
+    '<h2>Component × Workflow</h2><p>which components each workflow exercises — ● primary · ○ support</p>'));
+  p.appendChild(compWorkflowMatrix());
+
+  // B. control x component
+  p.appendChild(el('div','sec-title',
+    '<h2>Control × Component</h2><p>Part I control catalog resolved onto overlay components (the backlog matrix)</p>'));
+  p.appendChild(controlComponentMatrix());
+
+  // C. graph
+  p.appendChild(el('div','sec-title',
+    '<h2>Component handoff graph</h2><p>the data-plane → control → evidence → governance flow (Figure 4)</p>'));
+  p.appendChild(graphView());
+
+  // D. DDIL behavior
+  p.appendChild(el('div','sec-title',
+    '<h2>Component × DDIL tier</h2><p>every component has a defined offline behavior — why the stack survives isolation</p>'));
+  p.appendChild(ddilTable());
+
+  // E. threats
+  p.appendChild(el('div','sec-title',
+    '<h2>Threat × Control</h2><p>each agent-fleet attack class mapped to the mitigating control</p>'));
+  p.appendChild(threatTable());
+}
+
+function compWorkflowMatrix(){
+  const comps=D.topology.components, wfs=D.topology.workflows;
+  const roleOf={};
+  D.intersections.component_workflow.forEach(c=>roleOf[c.comp+'|'+c.wf]=c.role);
+  const wrap=el('div','scroll');
+  const t=el('table','matrix');
+  let head='<thead><tr><th class="rowh">Component</th>';
+  wfs.forEach(w=>head+=`<th class="rot" title="${esc(w.name)}">${w.id}</th>`); head+='</tr></thead>';
+  let body='<tbody>';
+  comps.forEach(c=>{
+    body+=`<tr data-row="${c.id}"><th class="rowh"><span class="pdot" style="display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:7px;background:var(${PLANE_VAR[c.group]})"></span><span class="mono" style="font-weight:700">${c.id}</span> ${esc(c.name)}</th>`;
+    wfs.forEach(w=>{
+      const r=roleOf[c.id+'|'+w.id];
+      body+=`<td data-col="${w.id}" data-row="${c.id}">`+
+        (r?`<span class="mk ${r}" title="${c.id} is ${r} in ${w.id}">${r==='primary'?'●':'○'}</span>`:'')+'</td>';
+    });
+    body+='</tr>';
+  });
+  body+='</tbody>';
+  t.innerHTML=head+body; wrap.appendChild(t);
+  // clickable headers + focus wiring
+  onFocus(()=>{
+    $$('tr[data-row]',t).forEach(tr=>{
+      const id=tr.dataset.row;
+      tr.classList.toggle('rowhl',focus===id);
+      tr.classList.toggle('dim',focus&&focus!==id);
+    });
+  });
+  $$('th.rowh',t).forEach(th=>{const id=th.parentElement.dataset.row;
+    if(id){th.style.cursor='pointer';th.addEventListener('click',()=>setFocus(id));}});
+  return wrap;
+}
+
+function controlComponentMatrix(){
+  const comps=D.topology.components, controls=D.topology.controls;
+  const has={}; D.intersections.control_component.forEach(x=>has[x.control+'|'+x.comp]=1);
+  const wrap=el('div','scroll');
+  const t=el('table','matrix');
+  let head='<thead><tr><th class="rowh">Control</th>';
+  comps.forEach(c=>head+=`<th class="rot" title="${esc(c.name)}">${c.id}</th>`); head+='</tr></thead>';
+  let body='<tbody>';
+  controls.forEach(ct=>{
+    body+=`<tr><th class="rowh"><span class="mono" style="font-weight:700;color:var(--accent)">${ct.id}</span> ${esc(ct.name)}</th>`;
+    comps.forEach(c=>{
+      body+=`<td data-col="${c.id}">`+
+        (has[ct.id+'|'+c.id]?`<span class="mk on" title="${ct.id} → ${c.id}">✓</span>`:'')+'</td>';
+    });
+    body+='</tr>';
+  });
+  body+='</tbody>'; t.innerHTML=head+body; wrap.appendChild(t);
+  onFocus(()=>{
+    $$('td[data-col]',t).forEach(td=>td.classList.toggle('colhl',focus&&td.dataset.col===focus));
+    $$('th.rot',t).forEach((th,i)=>th.classList.toggle('colhl',focus&&comps[i].id===focus));
+  });
+  $$('th.rot',t).forEach((th,i)=>{th.style.cursor='pointer';
+    th.addEventListener('click',()=>setFocus(comps[i].id));});
+  return wrap;
+}
+
+function graphView(){
+  const cols=['governance','trust','dataplane','control','observability'];
+  const nodes=D.intersections.graph.nodes, edges=D.intersections.graph.edges;
+  const byCol={}; cols.forEach(c=>byCol[c]=[]);
+  nodes.forEach(n=>byCol[n.group].push(n));
+  const W=1000,H=560,padY=40;
+  const pos={};
+  cols.forEach((c,ci)=>{
+    const x=90+ci*((W-180)/(cols.length-1));
+    const list=byCol[c]; const gap=(H-2*padY)/(Math.max(list.length,1)+ (list.length>1?0:0)+ ( list.length? 0:0));
+    list.forEach((n,i)=>{ const y=padY+ (H-2*padY)*( (i+1)/(list.length+1) ); pos[n.id]={x,y}; });
+  });
+  const EK={governance:'--p-gov',identity:'--p-trust',control:'--p-control',evidence:'--p-obs',hygiene:'--critical'};
+  const NW=118,NH=38;
+  const wrap=el('div','graphwrap');
+  let svg=`<svg class="graph" viewBox="0 0 ${W} ${H}" role="img" aria-label="Component handoff graph">`;
+  svg+=`<defs>`;
+  Object.entries(EK).forEach(([k,v])=>{
+    svg+=`<marker id="ar-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(${v})"/></marker>`;
+  });
+  svg+=`</defs>`;
+  // column labels
+  cols.forEach((c,ci)=>{const x=90+ci*((W-180)/(cols.length-1));
+    const pl=D.topology.planes.find(p=>p.id===c);
+    svg+=`<text x="${x}" y="20" text-anchor="middle" font-size="10.5" font-weight="700" letter-spacing="1" fill="var(${PLANE_VAR[c]})" style="text-transform:uppercase">${esc(pl.name.split(' ')[0])}</text>`;});
+  // edges
+  edges.forEach((e,i)=>{
+    const a=pos[e.from],b=pos[e.to]; if(!a||!b)return;
+    const x1=a.x+ (b.x>=a.x?NW/2:-NW/2), y1=a.y, x2=b.x+ (b.x>=a.x?-NW/2:NW/2), y2=b.y;
+    const mx=(x1+x2)/2;
+    svg+=`<path class="gedge" data-from="${e.from}" data-to="${e.to}" stroke="var(${EK[e.kind]})"
+      marker-end="url(#ar-${e.kind})" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}"><title>${esc(e.from)} → ${esc(e.to)}: ${esc(e.label)}</title></path>`;
+  });
+  // nodes
+  nodes.forEach(n=>{
+    const pn=pos[n.id]; const cv=PLANE_VAR[n.group];
+    svg+=`<g class="gnode" data-id="${n.id}" transform="translate(${pn.x-NW/2},${pn.y-NH/2})">
+      <rect width="${NW}" height="${NH}" rx="8" fill="var(--surface-2)" stroke="var(${cv})"></rect>
+      <text class="id" x="9" y="16" fill="var(${cv})">${n.id}</text>
+      <text class="nm" x="9" y="29">${esc(n.name.length>17?n.name.slice(0,16)+'…':n.name)}</text></g>`;
+  });
+  svg+=`</svg>`;
+  wrap.innerHTML=svg;
+  // legend
+  const lg=el('div','legend');
+  Object.entries(EK).forEach(([k,v])=>lg.appendChild(el('span','',
+    `<i style="background:var(${v})"></i>${k}`)));
+  wrap.appendChild(lg);
+  // interactions
+  $$('g.gnode',wrap).forEach(g=>g.addEventListener('click',()=>setFocus(g.dataset.id)));
+  onFocus(()=>{
+    const nbr=new Set();
+    if(focus){edges.forEach(e=>{if(e.from===focus)nbr.add(e.to);if(e.to===focus)nbr.add(e.from);});nbr.add(focus);}
+    $$('g.gnode',wrap).forEach(g=>g.classList.toggle('dim',focus&&!nbr.has(g.dataset.id)));
+    $$('path.gedge',wrap).forEach(pth=>{
+      const inc=focus&&(pth.dataset.from===focus||pth.dataset.to===focus);
+      pth.classList.toggle('hl',!!inc); pth.classList.toggle('dim',focus&&!inc);
+    });
+  });
+  return wrap;
+}
+
+function ddilTable(){
+  const wrap=el('div','scroll');const t=el('table','');
+  t.innerHTML=`<thead><tr><th>Component</th><th>Connected</th><th>Degraded</th><th>Isolated</th></tr></thead>`;
+  const tb=el('tbody','');
+  D.intersections.ddil_behavior.forEach(r=>{
+    const c=compById[r.id];
+    const tr=el('tr','',
+      `<td><span class="mono" style="font-weight:700">${r.id}</span> ${esc(c?c.name:'')}</td>
+       <td><span class="pill st-good">${esc(r.connected)}</span></td>
+       <td><span class="pill st-warning">${esc(r.degraded)}</span></td>
+       <td><span class="pill st-serious">${esc(r.isolated)}</span></td>`);
+    tr.dataset.row=r.id; tb.appendChild(tr);
+  });
+  t.appendChild(tb);wrap.appendChild(t);
+  onFocus(()=>$$('tr[data-row]',t).forEach(tr=>{
+    tr.classList.toggle('rowhl',focus===tr.dataset.row);
+    tr.style.opacity=(focus&&focus!==tr.dataset.row)?.4:1;}));
+  return wrap;
+}
+
+function threatTable(){
+  const wrap=el('div','scroll');const t=el('table','');
+  t.innerHTML=`<thead><tr><th>Threat class</th><th>STRIDE</th><th class="mono">ATLAS</th><th>Plane</th><th>Controls</th></tr></thead>`;
+  const tb=el('tbody','');
+  D.intersections.threats.forEach(th=>{
+    const tr=el('tr','',
+      `<td>${esc(th.threat)}</td><td>${esc(th.stride)}</td>
+       <td class="mono">${esc(th.atlas)}</td>
+       <td><span class="pill" style="color:var(${PLANE_VAR[th.plane]});border-color:color-mix(in srgb,var(${PLANE_VAR[th.plane]}) 40%,transparent)">${esc(th.plane)}</span></td>
+       <td class="mono">${th.controls.map(esc).join(' · ')}</td>`);
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);wrap.appendChild(t);return wrap;
+}
+
+/* ================= EVIDENCE ================= */
+let evFilters={rec:'all',kind:'all',agent:'all'};
+function renderEvidence(){
+  const p=$('#p-evidence'),ev=D.evidence;p.innerHTML='';
+  // chain summary
+  const cg=el('div','grid tiles');
+  const chainOk=ev.chain.authoritative_ok&&ev.chain.ledger_ok;
+  [['Authoritative chain',ev.chain.authoritative_ok?'VERIFIED':'BROKEN',ev.chain.authoritative_msg,ev.chain.authoritative_ok?'good':'critical'],
+   ['Reconciliation ledger',ev.chain.ledger_ok?'VERIFIED':'BROKEN',ev.chain.ledger_msg,ev.chain.ledger_ok?'good':'critical'],
+   ['Custody transfer',ev.chain.ledger_replayed+' / '+ev.chain.ledger_len,'ledger records replayed on reconnect','good'],
+   ['Merkle root',short(ev.merkle_root),'publish to external anchor','good']
+  ].forEach(([k,v,s,c])=>cg.appendChild(el('div','tile',
+    `<div class="k">${k}</div><div class="v mono st-${c}">${esc(v)}</div><div class="sub">${esc(s)}</div>`)));
+  p.appendChild(cg);
+
+  // filters + table
+  p.appendChild(el('div','sec-title','<h2>Flight recorder</h2><p>append-only, hash-chained decision log — click a row to expand its payload</p>'));
+  const all=[...ev.authoritative.map(r=>({...r,src:'authoritative'})),
+             ...ev.ledger.map(r=>({...r,src:'ledger'}))];
+  const kinds=[...new Set(all.map(r=>r.kind))];
+  const agents=[...new Set(all.map(r=>r.payload&&r.payload.agent).filter(Boolean))];
+  const f=el('div','filters');
+  const sel=(id,label,opts)=>{
+    const s=el('select');s.id=id;
+    const first=el('option','',`${label}: all`);first.value='';s.appendChild(first);
+    opts.forEach(o=>{const op=el('option','',o);op.value=o;s.appendChild(op);});
+    s.value=''; s.addEventListener('change',()=>{evFilters[id.replace('f-','')]=s.value||'all';drawRecs();});
+    return s;
+  };
+  f.appendChild(sel('f-rec','recorder',['authoritative','ledger']));
+  f.appendChild(sel('f-kind','kind',kinds));
+  f.appendChild(sel('f-agent','agent',agents));
+  p.appendChild(f);
+  const wrap=el('div','scroll');
+  wrap.innerHTML=`<table><thead><tr><th class="mono">seq</th><th class="mono">tick</th><th>kind</th><th>recorder</th><th class="mono">hash</th><th>summary</th></tr></thead><tbody id="recbody"></tbody></table>`;
+  p.appendChild(wrap);
+  window.__recs=all; drawRecs();
+
+  // IOC + incidents
+  const two=el('div','grid two');two.style.marginTop='18px';
+  // IOCs
+  const ic=el('div','card');ic.appendChild(el('div','',`<h3>Covert-channel IOCs <span class="muted">C10</span></h3>`));
+  if(ev.iocs.length){const ul=el('div','');ul.style.marginTop='8px';
+    ev.iocs.forEach(i=>ul.appendChild(el('div','',
+      `<div style="padding:8px 0;border-bottom:1px solid var(--hair)">
+        <span class="kindtag hyg">${esc(i.kind)}</span>
+        <span class="mono" style="margin-left:6px">sev ${i.severity.toFixed(2)}</span>
+        <span style="margin-left:6px">${esc(i.agent)}</span>
+        <div class="muted" style="margin-top:3px">${esc(i.detail)}</div></div>`)));
+    ic.appendChild(ul);} else ic.appendChild(el('p','lead','none this run'));
+  two.appendChild(ic);
+  // incidents
+  const inc=el('div','card');inc.appendChild(el('div','',`<h3>Autonomous hygiene incidents <span class="muted">C7 · W3</span></h3>`));
+  const tierName={1:'Narrow',2:'Isolate',3:'Revoke',4:'Rebuild'};
+  const tierCls={1:'warning',2:'serious',3:'critical',4:'critical'};
+  if(ev.incidents.length){const ul=el('div','');ul.style.marginTop='8px';
+    ev.incidents.forEach(i=>{
+      const box=el('div','');box.style.cssText='padding:8px 0;border-bottom:1px solid var(--hair)';
+      box.innerHTML=`<span class="pill st-${tierCls[i.tier]||'warning'}">Tier ${i.tier} · ${esc(i.tier_name||tierName[i.tier])}</span>
+        <span style="margin-left:8px">${esc(i.agent)}</span>
+        <span class="mono muted" style="margin-left:8px">sev ${Number(i.severity).toFixed(2)}</span>
+        <span class="muted" style="margin-left:8px">${i.corroborated?'corroborated':'single-signal'}</span>`;
+      const act=el('ul','actions');(i.actions||[]).forEach(a=>act.appendChild(el('li','',esc(a))));
+      box.appendChild(act);ul.appendChild(box);
+    });
+    inc.appendChild(ul);} else inc.appendChild(el('p','lead','none this run'));
+  two.appendChild(inc);
+  p.appendChild(two);
+
+  // agents roster
+  p.appendChild(el('div','sec-title','<h2>Fleet roster</h2><p>born via W2 (attestation → SVID → capability)</p>'));
+  const rw=el('div','scroll');
+  let rows=ev.agents.map(a=>{
+    const st=a.status; const cls=st==='REVOKED'||st==='REBUILDING'?'critical':st==='ISOLATED'?'serious':st==='NARROWED'?'warning':'good';
+    return `<tr><td class="mono" style="font-weight:700">${esc(a.id)}</td>
+      <td><span class="pill st-${cls}">${esc(st)}</span></td>
+      <td class="mono">${a.svid_lease}</td>
+      <td>${a.tools.map(t=>`<span class="kindtag">${esc(t)}</span>`).join(' ')}</td></tr>`;
+  }).join('');
+  rw.innerHTML=`<table><thead><tr><th>Agent</th><th>Status</th><th class="mono">SVID lease</th><th>Capability tools</th></tr></thead><tbody>${rows}</tbody></table>`;
+  p.appendChild(rw);
+
+  // honest gap
+  const g=ev.semantic_gap;
+  p.appendChild(el('div','sec-title','<h2>Honest failure capture</h2><p>the gap the architecture is explicit about not closing</p>'));
+  p.appendChild(el('div','callout',
+    `<b>Semantic / intent attack — DOCUMENTED (expected).</b> An in-scope prompt-injection read was
+     <b style="color:var(--ink)">${g.allowed?'ALLOWED':'blocked'}</b> and fully recorded
+     ${g.evidence_seq!=null?`at flight-record seq <span class="mono">${g.evidence_seq}</span>`:''}.
+     Every AATA gate is syntactic (who / what / scope); none inspects intent (spec 10.1). This is an
+     expected finding, not a test failure — and "the ledger has it" (10.8) is provenance, not adjudication.`));
+}
+function drawRecs(){
+  const tb=$('#recbody');if(!tb)return;tb.innerHTML='';
+  const kindCls={'pre-actuation':'pre','hygiene':'hyg','birth':'birth','mode':'mode'};
+  window.__recs.filter(r=>{
+    if(evFilters.rec!=='all'&&r.src!==evFilters.rec)return false;
+    if(evFilters.kind!=='all'&&r.kind!==evFilters.kind)return false;
+    if(evFilters.agent!=='all'&&!(r.payload&&r.payload.agent===evFilters.agent))return false;
+    return true;
+  }).forEach(r=>{
+    const tr=el('tr','reclink');
+    const kc=kindCls[r.kind.replace('reconciled:','')]||'';
+    const summ=summarize(r);
+    tr.innerHTML=`<td class="mono">${r.seq}</td><td class="mono">${r.t}</td>
+      <td><span class="kindtag ${kc}">${esc(r.kind)}</span></td>
+      <td class="muted">${r.src}</td>
+      <td class="mono" title="${esc(r.hash)}">${short(r.hash)}</td>
+      <td>${esc(summ)}</td>`;
+    tr.addEventListener('click',()=>{
+      const ex=tr.nextElementSibling;
+      if(ex&&ex.classList.contains('exrow')){ex.remove();return;}
+      const row=el('tr','exrow');const td=el('td');td.colSpan=6;
+      td.appendChild(el('div','payload',esc(JSON.stringify(r.payload,null,2))));
+      row.appendChild(td);tr.after(row);
+    });
+    tb.appendChild(tr);
+  });
+}
+function summarize(r){
+  const p=r.payload||{};
+  if(p.tool) return `${p.agent||''} · ${p.tool}${p.actuation_class?' ('+p.actuation_class+')':''}${p.verdict?' → '+p.verdict:''}`;
+  if(p.tier_name) return `${p.agent} · Tier ${p.tier} ${p.tier_name}`;
+  if(p.to) return `${p.from} → ${p.to}`;
+  if(p.attestation_hash) return `${p.agent} born · tools ${(p.tools||[]).length}`;
+  if(p.origin) return `reconciled ${p.origin} seq ${p.origin_seq}`;
+  return Object.keys(p).slice(0,3).join(', ');
+}
+
+/* ================= FLEET OPS ================= */
+const FTC={factory_worker:'--p-control',humanoid:'--p-gov',rover:'--p-data',autonomous_vehicle:'--p-trust'};
+const FTLABEL={factory_worker:'Factory worker',humanoid:'Humanoid',rover:'Rover',autonomous_vehicle:'Autonomous vehicle'};
+const COVVAR={full:'--good',partial:'--warning','reflex-only':'--serious',none:'--critical'};
+const STATUSVAR={succeeded:'--good',reassigned:'--warning',deferred:'--warning',failed:'--critical',quarantined:'--serious',assigned:'--accent'};
+function covpill(level,note){
+  return `<span class="pill" title="${esc(note||'')}" style="color:var(${COVVAR[level]});`
+    +`border-color:color-mix(in srgb,var(${COVVAR[level]}) 45%,transparent);`
+    +`background:color-mix(in srgb,var(${COVVAR[level]}) 10%,transparent)">${esc(level)}</span>`;
+}
+let rosterFilter={type:'all',status:'all'};
+function renderFleet(){
+  const p=$('#p-fleet'),F=D.fleet;
+  if(!F){p.innerHTML='<div class="card">No fleet data — run export_evidence.py.</div>';return;}
+  p.innerHTML='';
+  const acc=F.accounting,det=F.detection,ev=F.report.evidence,reg=F.registration;
+
+  // intro + KPIs
+  p.appendChild(el('div','card',
+    `<div class="eyebrow">Heterogeneous embodied fleet</div>
+     <h3 style="font-size:16px;margin-top:6px">${reg.requested} agents, four embodiment types, governed per purpose</h3>
+     <p class="lead">50 factory workers · 50 humanoids · 50 rovers · 50 autonomous vehicles. Each type carries its own
+     bounded objective, capability scope, kinetic threshold and reflex interlock. Every figure below is emitted by the
+     running overlay.</p>`));
+  const kt=el('div','grid tiles');kt.style.marginTop='14px';
+  [['Admitted',`${reg.admitted}/${reg.requested}`,`${reg.rejected} rejected at attestation`],
+   ['Tasks run',acc.total,`${acc.by_status.succeeded||0} succeeded`],
+   ['Monoculture alarms',det.monoculture_alarms.length,'correlated variant drift'],
+   ['Quarantined',det.quarantined.length,'blast-radius capped'],
+   ['Evidence',ev.authoritative_records,`chain ${ev.chain_ok?'INTACT':'BROKEN'}`],
+  ].forEach(([k,v,s])=>kt.appendChild(el('div','tile',
+    `<div class="k">${k}</div><div class="v mono">${esc(v)}</div><div class="sub">${esc(s)}</div>`)));
+  p.appendChild(kt);
+
+  // 1 · Registration
+  p.appendChild(el('div','sec-title',
+    '<h2>1 · Registration</h2><p>per-type W2 birth; tampered builds fail attestation and never receive an SVID</p>'));
+  const rg=el('div','grid');rg.style.gridTemplateColumns='repeat(auto-fit,minmax(180px,1fr))';
+  F.types.forEach(t=>{const c=reg.by_type[t.id];
+    rg.appendChild(el('div','tile',
+      `<div class="k" style="color:var(${FTC[t.id]})">● ${esc(FTLABEL[t.id])}</div>
+       <div class="v mono">${c.admitted}<span style="font-size:13px;color:var(--ink-mut)"> / ${c.admitted+c.rejected}</span></div>
+       <div class="sub">${c.rejected} rejected build(s) · rings ${Object.keys(reg.by_ring).length}</div>`));});
+  p.appendChild(rg);
+  // roster
+  const rf=el('div','filters');
+  const mkSel=(key,label,opts)=>{const s=el('select');const f=el('option','',`${label}: all`);f.value='';s.appendChild(f);
+    opts.forEach(o=>{const op=el('option','',o);op.value=o;s.appendChild(op);});
+    s.addEventListener('change',()=>{rosterFilter[key]=s.value||'all';drawRoster();});return s;};
+  rf.appendChild(mkSel('type','type',F.types.map(t=>t.id)));
+  rf.appendChild(mkSel('status','status',[...new Set(F.roster.map(r=>r.status))]));
+  p.appendChild(rf);
+  const rw=el('div','scroll');rw.style.maxHeight='340px';
+  rw.innerHTML=`<table><thead><tr><th>Agent</th><th>Type</th><th>Variant</th><th>Ring</th><th>Status</th><th>Reflex</th></tr></thead><tbody id="rosterbody"></tbody></table>`;
+  p.appendChild(rw);drawRoster();
+
+  // 2 · Mission alignment
+  p.appendChild(el('div','sec-title',
+    '<h2>2 · Mission-control alignment</h2><p>how governance aligns to agentic purpose — signed per-type constitution → capability → PDP threshold → reflex</p>'));
+  const pr=F.alignment_probe.by_type||{};
+  const probeBox=el('div','card');
+  probeBox.appendChild(el('div','',
+    `<div class="eyebrow">Alignment probe — identical maneuver @ confidence ${F.alignment_probe.confidence}</div>
+     <p class="lead">Same action, same confidence, opposite verdict: each type's kinetic threshold is set to its physical risk.</p>`));
+  const pw=el('div','probe');
+  ['rover','autonomous_vehicle'].forEach(tid=>{const r=pr[tid];if(!r)return;
+    pw.appendChild(el('div','pc',
+      `<span class="tbadge" style="background:var(${FTC[tid]})"></span><b>${esc(FTLABEL[tid])}</b>
+       <div class="muted" style="margin:4px 0">conf ${r.confidence} vs kinetic threshold ${r.kinetic_threshold}</div>
+       <div class="verdict st-${r.allowed?'good':'critical'}">${r.decision.toUpperCase()}</div>`));});
+  probeBox.appendChild(pw);p.appendChild(probeBox);
+  // alignment table
+  const at=el('div','scroll');at.style.marginTop='12px';
+  let ah=`<table class="matrix"><thead><tr><th class="rowh">Type</th><th>Purpose / bounded objective</th><th>Capability (tools)</th><th class="mono">Kinetic θ</th><th>Reflex interlock (EX-02)</th><th>Standard</th></tr></thead><tbody>`;
+  F.types.forEach(t=>{ah+=`<tr><th class="rowh"><span class="tbadge" style="background:var(${FTC[t.id]})"></span><b>${esc(FTLABEL[t.id])}</b></th>
+    <td>${esc(t.purpose)}<div class="muted" style="margin-top:3px">${esc(t.objective)}</div></td>
+    <td class="mono">${t.tools.map(esc).join(', ')}<div class="muted">${t.actuation.join('/')}</div></td>
+    <td class="mono" style="text-align:center">${t.kinetic_threshold}</td>
+    <td>${esc(t.reflex)}${t.continuous_control?'<div style="color:var(--serious);font-size:11px;margin-top:3px">continuous loop — reflex-only</div>':''}</td>
+    <td class="muted">${esc(t.standard)}</td></tr>`;});
+  ah+='</tbody></table>';at.innerHTML=ah;p.appendChild(at);
+
+  // 3 · Detection
+  p.appendChild(el('div','sec-title',
+    '<h2>3 · Detection</h2><p>per-agent (C10/C11) + fleet-level cohort & monoculture (the layer that only exists at scale)</p>'));
+  if(det.monoculture_alarms.length){
+    det.monoculture_alarms.forEach(a=>p.appendChild(el('div','alarm',
+      `<b>⚠ Monoculture alarm — ${esc(a.cohort)}.</b> ${esc(a.reason)}. Blast-radius response: rollout ring
+       <span class="mono">${esc(a.cohort)}</span> frozen; the correlated cluster autonomously quarantined
+       (reflex safety preserved: ${det.reflex_preserved}).`)));
+  }
+  const dt=el('div','grid tiles');dt.style.marginTop='12px';
+  [['Cohort outliers',det.cohort_outliers.length,`${det.lone_alerts} lone → alert only`],
+   ['Correlated cluster',det.quarantined.length,'autonomously quarantined'],
+   ['Frozen rings',det.frozen_variants.length,det.frozen_variants.join(', ')||'none'],
+   ['Reflex preserved',det.reflex_preserved?'YES':'NO','EX-02 through quarantine'],
+  ].forEach(([k,v,s])=>dt.appendChild(el('div','tile',
+    `<div class="k">${k}</div><div class="v mono">${esc(v)}</div><div class="sub">${esc(s)}</div>`)));
+  p.appendChild(dt);
+
+  // 4 · Task accounting
+  p.appendChild(el('div','sec-title',
+    '<h2>4 · Failed-task accounting</h2><p>every terminal task — success and failure — wrote a task-outcome record (P5)</p>'));
+  const total=acc.total||1;
+  let bar='<div class="obar">';
+  Object.entries(acc.by_status).forEach(([s,n])=>{bar+=`<div title="${s}: ${n}" style="width:${100*n/total}%;background:var(${STATUSVAR[s]||'--accent'})"></div>`;});
+  bar+='</div>';
+  const accCard=el('div','card');
+  accCard.innerHTML=`<h3>Outcomes <span class="muted">${acc.total} tasks</span></h3>${bar}
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px">`+
+    Object.entries(acc.by_status).map(([s,n])=>`<span class="st-${(STATUSVAR[s]||'--accent').replace('--','')}">● <span style="color:var(--ink)">${esc(s)} ${n}</span></span>`).join('')+
+    `</div><div class="muted" style="margin-top:8px">failure causes: ${Object.entries(acc.by_cause).map(([c,n])=>`<span class="kindtag">${esc(c)} ${n}</span>`).join(' ')||'none'}</div>`;
+  p.appendChild(accCard);
+  // task sample
+  const ts=el('div','scroll');ts.style.marginTop='12px';
+  let th=`<table><thead><tr><th>Task</th><th>Agent</th><th>Type</th><th>Status</th><th>Cause</th><th>How the overlay responded</th></tr></thead><tbody>`;
+  F.tasks_sample.forEach(t=>{th+=`<tr><td class="mono">${esc(t.id)}</td><td class="mono">${esc(t.agent)}</td>
+    <td><span class="tbadge" style="background:var(${FTC[t.type]})"></span>${esc(t.type.split('_')[0])}</td>
+    <td><span class="pill st-${(STATUSVAR[t.status]||'--accent').replace('--','')}">${esc(t.status)}</span></td>
+    <td class="mono">${esc(t.cause)}</td>
+    <td class="muted">${esc(t.note||(t.status==='succeeded'?'completed under type policy':''))}${t.reassigned_to?' → '+esc(t.reassigned_to):''}</td></tr>`;});
+  th+='</tbody></table>';ts.innerHTML=th;p.appendChild(ts);
+
+  // 5 · Report to engine
+  p.appendChild(el('div','sec-title',
+    '<h2>5 · Report to the engine</h2><p>internal (Mission Orchestrator + Governance Console) + an external accounting feed</p>'));
+  const two=el('div','grid two');
+  two.appendChild(el('div','card',
+    `<h3>Internal routing</h3>
+     <ul class="actions">
+       <li>task rollup → <b>Mission Orchestrator</b> (by type & ring)</li>
+       <li>IOCs · monoculture alarms · incidents → <b>Governance Console</b> (threat level ${F.report.governance.threat_level})</li>
+       <li>every decision hash-chained in the flight recorder (${ev.authoritative_records} records)</li>
+     </ul>`));
+  const extCard=el('div','card');
+  extCard.innerHTML=`<h3>External <span class="muted">TaskAccountingReport</span></h3>`;
+  extCard.appendChild(el('div','payload',esc(JSON.stringify({
+    fleet_id:F.report.fleet_id,
+    registration:{admitted:reg.admitted,rejected:reg.rejected},
+    tasks:acc.by_status,
+    detection:{cohort_outliers:det.cohort_outliers.length,monoculture_alarms:det.monoculture_alarms.length},
+    governance:F.report.governance,
+    evidence:{records:ev.authoritative_records,chain_ok:ev.chain_ok,merkle_root:ev.merkle_root.slice(0,16)+'…'},
+  },null,2))));
+  two.appendChild(extCard);
+  p.appendChild(two);
+
+  // 6 · Coverage-gap map
+  p.appendChild(el('div','sec-title',
+    '<h2>6 · Gaps in coverage</h2><p>control × embodiment type — where governance is full, partial, reflex-only, or absent</p>'));
+  const cw=el('div','scroll');
+  let ch=`<table class="matrix"><thead><tr><th class="rowh">Governance dimension</th>`;
+  F.types.forEach(t=>ch+=`<th title="${esc(FTLABEL[t.id])}"><span class="tbadge" style="background:var(${FTC[t.id]})"></span>${esc(t.id.split('_')[0])}</th>`);
+  ch+=`<th class="mono">ref</th></tr></thead><tbody>`;
+  F.coverage.forEach(row=>{ch+=`<tr><th class="rowh">${esc(row.dim)}</th>`;
+    F.types.forEach(t=>{const c=row.cells[t.id];ch+=`<td style="text-align:center">${covpill(c.level,c.note)}</td>`;});
+    ch+=`<td class="mono muted">${esc(row.ref)}</td></tr>`;});
+  ch+='</tbody></table>';cw.innerHTML=ch;p.appendChild(cw);
+  p.appendChild(el('div','callout',
+    `<b>Headline gap (10.7):</b> continuous high-rate control — AV steering, humanoid balance — is
+     <b style="color:var(--serious)">reflex-only</b>: a 1&nbsp;kHz loop cannot be per-call authz-gated, so it is governed by
+     functional-safety interlocks (designed against physics, not adversaries). Semantic/intent (10.1) and
+     attestation-≠-safety (10.2) are gaps for <b>all</b> types.`));
+}
+function drawRoster(){
+  const tb=$('#rosterbody');if(!tb)return;tb.innerHTML='';
+  D.fleet.roster.filter(r=>
+    (rosterFilter.type==='all'||r.type===rosterFilter.type)&&
+    (rosterFilter.status==='all'||r.status===rosterFilter.status)
+  ).slice(0,220).forEach(r=>{
+    const stv=(STATUSVAR[r.status.toLowerCase()]||(r.admitted?'--good':'--critical')).replace('--','');
+    tb.appendChild(el('tr','',
+      `<td class="mono">${esc(r.agent)}</td>
+       <td><span class="tbadge" style="background:var(${FTC[r.type]})"></span>${esc(r.type.split('_')[0])}</td>
+       <td class="mono">${esc(r.variant)}</td><td>${esc(r.ring)}</td>
+       <td><span class="pill st-${stv}">${esc(r.admitted?r.status:'REJECTED')}</span></td>
+       <td class="mono">${r.reflex_active?'active':'—'}</td>`));
+  });
+}
+
+/* ---------- boot ---------- */
+$('#subtitle').textContent=D.meta.subtitle;
+$('#themebtn').addEventListener('click',()=>{
+  const r=document.documentElement;
+  const cur=r.getAttribute('data-theme');
+  const sysDark=matchMedia('(prefers-color-scheme: dark)').matches;
+  r.setAttribute('data-theme', cur? (cur==='dark'?'light':'dark') : (sysDark?'light':'dark'));
+});
+$('#foot').innerHTML=`AATA reference prototype · data generated at logical tick
+  <span class="mono">${D.meta.generated_tick}</span> · v${D.meta.version}.
+  Every figure is emitted by the running Python overlay (<span class="mono">export_evidence.py</span>).
+  Prototype crypto is stdlib HMAC/BLAKE2 standing in for Biscuit/SPIRE/cosign — the security shape is faithful, the primitives are labelled swaps.`;
+renderStrip();renderTabs();renderFocusBar();
+renderOverview();renderWorkflows();renderIntersections();renderFleet();renderEvidence();
+renderFocusBar();               // ensure focus listeners fire once
+</script>
+</body>
+</html>
