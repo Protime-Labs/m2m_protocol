@@ -21,6 +21,11 @@ No pip install. No network. Pure standard library. (Windows/macOS/Linux.)
 > for the product overview, the AATA document set (Parts I–III + Master Strategy),
 > and the adoption path (ADOPT / EXTEND / BUILD dispositions, concept → pilot →
 > production). This file is the deep technical reference.
+>
+> **License:** [Business Source License 1.1](../LICENSE) — non-production use (eval,
+> testing, research) is free for everyone; production use is gated to authorized
+> beta/pilot participants and otherwise needs a commercial license. Each version
+> converts to Apache-2.0 on its Change Date. © 2026 Protime Consulting Inc.
 
 ### Heterogeneous embodied fleet (registration · governance · accounting · gaps)
 

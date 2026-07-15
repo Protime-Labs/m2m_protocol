@@ -183,5 +183,10 @@ for the full control × embodiment-type coverage-gap map.
 not a product — it is a faithful, falsifiable model of the architecture's security
 guarantees, intended for evaluation and pilot design.
 
-**License:** © 2026 Protime Consulting Inc. All rights reserved. A formal `LICENSE`
-file is pending; contact the maintainers before redistribution or production use.
+**License:** [Business Source License 1.1](LICENSE) — *source-available, not (yet) open source.*
+
+- **Free for everyone:** copy, modify, and make **non-production** use (evaluation, testing, non-commercial research).
+- **Production use** is granted only to **authorized participants in a Protime Consulting Inc. beta / pilot program** under a separate written agreement; any other production or commercial use (including offering it as a hosted/managed service) requires a **commercial license**.
+- **Auto-converts to open:** each released version becomes available under the **Apache License 2.0** on its Change Date (**2030-07-15** for v0.1.0, i.e. four years after release).
+
+© 2026 Protime Consulting Inc. For commercial or alternative licensing, contact the Licensor (see [`LICENSE`](LICENSE)).
