@@ -17,6 +17,11 @@ python run_all.py            # tests + all four workflow demos + the blackout dr
 
 No pip install. No network. Pure standard library. (Windows/macOS/Linux.)
 
+> **New here?** Start with the repository front door — [`../README.md`](../README.md) —
+> for the product overview, the AATA document set (Parts I–III + Master Strategy),
+> and the adoption path (ADOPT / EXTEND / BUILD dispositions, concept → pilot →
+> production). This file is the deep technical reference.
+
 ### Heterogeneous embodied fleet (registration · governance · accounting · gaps)
 
 A mixed fleet of 50 factory workers, 50 humanoids, 50 rovers and 50 autonomous
@@ -48,7 +53,12 @@ produces — evidence, workflows, and the cross-cutting intersections:
 
 ```
 python export_evidence.py    # runs the live overlay -> dashboard/data.js + data.json
-# then open dashboard/index.html in a browser
+
+# launch the console (recommended): serve the dashboard over a local HTTP server
+python -m http.server 8787 --bind 127.0.0.1 --directory dashboard
+# then open http://127.0.0.1:8787/index.html
+
+# (or just open dashboard/index.html directly — a pre-generated data.js is committed)
 python build_artifact.py     # optional: fold data inline -> dashboard/aata-dashboard.html
 ```
 
