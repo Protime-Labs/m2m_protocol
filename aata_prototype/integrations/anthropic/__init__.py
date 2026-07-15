@@ -27,10 +27,12 @@ from integrations.anthropic.judge import (
     as_ioc,
 )
 from integrations.anthropic.redteam import ProbeResult, RedTeam
+from integrations.anthropic.console import CONSOLE_MODEL, GovernanceConsole
 
 __all__ = [
     "GovernedAgent", "ToolCallRecord", "build_tool_defs", "dispatch", "granted_tools",
     "LLMAgent", "LLMDisabled", "RunResult", "enabled", "DEFAULT_MODEL",
     "SemanticJudge", "JudgeVerdict", "as_ioc", "JUDGE_MODEL",
     "RedTeam", "ProbeResult",
+    "GovernanceConsole", "CONSOLE_MODEL",
 ]

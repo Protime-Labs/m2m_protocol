@@ -85,6 +85,17 @@ threat / isolation (the demo shows both). A real Claude adversary (live flavor) 
 *refuses* an exfiltration goal outright — overlay-level red-teaming uses the deterministic
 harness, which doesn't depend on model cooperation.
 
+## Governance Console copilot (C12) — drafts for human sign-off
+
+[`console.py`](console.py) is the lowest-risk Claude role: it **reads** the hash-chained
+evidence for an agent and **drafts** an incident summary or the justification package an
+autonomous (isolated-mode) decision requires — for a human to review and sign off
+(`demos/demo_governance_console.py`). It is **reads-only**: it gates nothing, decides
+nothing, adjudicates nothing (spec 10.8 — "the ledger has it" is provenance, not
+adjudication). Every draft is grounded in cited record seqs, and the fact that a draft was
+produced is recorded as an advisory `governance-note` (provenance, never a decision).
+Default model: `claude-sonnet-5`.
+
 ## Model choice
 
 | Role | Model | Why |

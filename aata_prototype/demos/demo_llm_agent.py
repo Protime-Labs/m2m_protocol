@@ -21,6 +21,11 @@ import sys
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
+try:  # live model prose may contain non-cp1252 chars (em-dashes, smart quotes)
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 from aata.scenario import build_estate, birth
 from integrations.anthropic import GovernedAgent, LLMAgent, dispatch, enabled, granted_tools
 
