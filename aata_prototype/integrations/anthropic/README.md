@@ -43,6 +43,26 @@ Each governed tool takes `(arg, rationale, confidence)` from the model:
   C12→agent channel that user/tool text cannot spoof.
 - **Token counting / response usage** → real spend signal (surfaced in the demo).
 
+## Semantic judge (C11) — surfacing the 10.1 gap, honestly
+
+Every AATA gate is syntactic; none inspects meaning. [`judge.py`](judge.py) adds an
+**advisory** semantic classifier: given a call's objective + tool + canonicalized
+arg/rationale, Claude returns `{risk, verdict, reasons}`. It is used honestly:
+
+- **Advisory, never the enforcement path.** It runs post-hoc (like C11), records a
+  `judge` evidence record (C9), and feeds the existing hygiene corroboration gate. A
+  **lone** judge signal caps at **Tier 1 (Narrow)** — it can never alone quarantine or
+  reverse an action.
+- **The judge is itself fallible/injectable** (10.1 recursion): its inputs are
+  C10-canonicalized, and a parse failure fails toward `suspicious` (flag for review), not
+  toward trust.
+- This **does not close** the semantic gap — it lets the overlay *surface* the attack it
+  previously could only document. `demos/demo_semantic_judge.py` shows a syntactically
+  clean, semantically malicious call: the gateway ALLOWS it (the documented gap), the
+  judge FLAGS it, and the agent is narrowed advisorily — the attack is surfaced, not un-done.
+
+Default model: `claude-haiku-4-5` (cheap, high-volume classification).
+
 ## Model choice
 
 | Role | Model | Why |

@@ -20,8 +20,15 @@ from integrations.anthropic.llm_agent import (
     RunResult,
     enabled,
 )
+from integrations.anthropic.judge import (
+    JUDGE_MODEL,
+    JudgeVerdict,
+    SemanticJudge,
+    as_ioc,
+)
 
 __all__ = [
     "GovernedAgent", "ToolCallRecord", "build_tool_defs", "dispatch", "granted_tools",
     "LLMAgent", "LLMDisabled", "RunResult", "enabled", "DEFAULT_MODEL",
+    "SemanticJudge", "JudgeVerdict", "as_ioc", "JUDGE_MODEL",
 ]

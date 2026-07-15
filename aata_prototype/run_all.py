@@ -30,6 +30,8 @@ def main():
     run(os.path.join(HERE, "tests", "test_fleet.py"))
     banner("LLM-AGENT TESTS (Claude-as-governed-workload guarantees, offline)")
     run(os.path.join(HERE, "tests", "test_llm_agent.py"))
+    banner("SEMANTIC-JUDGE TESTS (advisory C11 intent classifier, offline)")
+    run(os.path.join(HERE, "tests", "test_semantic_judge.py"))
 
     for name, title in [
         ("demo_w2_birth", "W2 -- Agent Birth (attestation to capability)"),
@@ -43,10 +45,14 @@ def main():
 
     # The LLM demo is offline-forced here (env flag cleared) so the suite stays
     # deterministic and network-free even if a developer has AATA_LLM_BRAIN set.
-    banner("LLM-AGENT CAPABILITY (Claude as governed workload -- offline illustration)")
+    # Anthropic-integration demos run OFFLINE-forced here (env flag cleared) so the suite
+    # stays deterministic and network-free even if a developer has AATA_LLM_BRAIN set.
     saved = os.environ.pop("AATA_LLM_BRAIN", None)
     try:
+        banner("LLM-AGENT CAPABILITY (Claude as governed workload -- offline illustration)")
         run(os.path.join(HERE, "demos", "demo_llm_agent.py"))
+        banner("SEMANTIC JUDGE (C11 advisory intent classifier -- offline stub)")
+        run(os.path.join(HERE, "demos", "demo_semantic_judge.py"))
     finally:
         if saved is not None:
             os.environ["AATA_LLM_BRAIN"] = saved
