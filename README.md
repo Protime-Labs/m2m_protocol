@@ -1,5 +1,7 @@
 # AATA — Autonomous Agent Trust Architecture
 
+[![CI](https://github.com/Protime-Labs/m2m_protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/Protime-Labs/m2m_protocol/actions/workflows/ci.yml)
+
 **A zero-trust security overlay for fleets of autonomous, agentic, and embodied
 machines.** AATA (AATA-2026-001) wraps an unmodified estate of agents, tools, and
 actuators in twelve overlay components that *see and gate every action* — giving
@@ -186,7 +188,7 @@ guarantees, intended for evaluation and pilot design.
 **License:** [Business Source License 1.1](LICENSE) — *source-available, not (yet) open source.*
 
 - **Free for everyone:** copy, modify, and make **non-production** use (evaluation, testing, non-commercial research).
-- **Production use** is granted only to **authorized participants in a Protime Consulting Inc. beta / pilot program** under a separate written agreement; any other production or commercial use (including offering it as a hosted/managed service) requires a **commercial license**.
+- **Production use** is granted only to **authorized participants in a Protime Consulting Inc. beta / pilot program** under a separate written agreement (terms outlined in [`BETA.md`](BETA.md) — a draft pending counsel review); any other production or commercial use (including offering it as a hosted/managed service) requires a **commercial license**.
 - **Auto-converts to open:** each released version becomes available under the **Apache License 2.0** on its Change Date (**2030-07-15** for v0.1.0, i.e. four years after release).
 
 © 2026 Protime Consulting Inc. For commercial or alternative licensing, contact **info@protimeconsulting.com** (see [`LICENSE`](LICENSE)).
