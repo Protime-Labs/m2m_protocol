@@ -1,0 +1,46 @@
+# Live-validation infrastructure for the service-backed AATA adapters (Sprint 3).
+#
+# NOT used by CI -- the offline suite (run_all.py) needs none of this. Start it locally to
+# exercise the two adapters CI can't host: the S3 Object-Lock WORM store (C9) and the NATS
+# JetStream store-and-forward bus (C8/W4). Then:
+#
+#   docker compose up -d
+#   # export the AWS_* + AATA_* env (see docs/live-validation.md)
+#   AATA_LIVE=1 python aata_prototype/run_live.py
+#
+services:
+  # MinIO -- S3-compatible object store with Object-Lock (true WORM retention).
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: aata
+      MINIO_ROOT_PASSWORD: aata-secret
+    ports:
+      - "9000:9000"     # S3 API  (set AWS_ENDPOINT_URL=http://localhost:9000)
+      - "9001:9001"     # console (http://localhost:9001)
+    volumes:
+      - minio-data:/data
+
+  # One-shot: create the WORM bucket WITH Object-Lock enabled (requires versioning).
+  createbucket:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 aata aata-secret; do echo 'waiting for minio...'; sleep 1; done;
+      mc mb --with-lock --ignore-existing local/aata-worm;
+      echo 'bucket local/aata-worm ready (object-lock enabled)';
+      "
+
+  # NATS with JetStream (-js) -- the durable store-and-forward transport.
+  nats:
+    image: nats:latest
+    command: ["-js"]
+    ports:
+      - "4222:4222"     # client  (set AATA_NATS=nats://localhost:4222)
+      - "8222:8222"     # monitoring (http://localhost:8222)
+
+volumes:
+  minio-data:
