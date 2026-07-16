@@ -1,0 +1,11 @@
+# Optional -- ONLY for the Biscuit Ed25519 capability tokens (integrations/biscuit/).
+# The core prototype and its offline suite need NONE of this; the core uses the HMAC
+# capability token (aata/capability.py). Install to run the real asymmetric primitive:
+#
+#   pip install -r requirements-biscuit.txt
+#   python demos/demo_biscuit.py
+#
+# `cryptography` provides Ed25519 (sign/verify). In a full production deployment this
+# is the `biscuit-python` library; this module implements the same construction directly
+# on Ed25519 to keep the dependency small and the crypto legible.
+cryptography>=42
