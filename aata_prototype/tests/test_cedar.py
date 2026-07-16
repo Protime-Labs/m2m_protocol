@@ -127,6 +127,48 @@ def test_parity_with_core_pdp_across_matrix():
     print(f"    parity holds across {checked} (tool x class x confidence x threat) cases")
 
 
+def test_adapter_full_verdict_parity_with_core_pdp():
+    """The CedarPDPAdapter (drop-in for Gateway(pdp=...)) matches core PDP on the WHOLE
+    Verdict path -- bundle auth/TTL, capability (permissive AND restrictive token), engine
+    error -- not just the delegated prohibition+confidence decision."""
+    if _skip():
+        return
+    from aata.pdp import PDP, PolicyBundle
+    from aata.capability import Token, root_grant
+    from integrations.cedar.adapter import CedarPDPAdapter
+
+    gov_key, auth_key = b"gov-secret-key", b"authority-key"
+    all_tools = {"actuator_move", "self_destruct", "fire", "pay", "log"}
+    bundle = PolicyBundle("v1", ttl_until=10_000,
+                          prohibited_tools=frozenset({"self_destruct"})).sign(gov_key)
+    core = PDP(gov_key, bundle)
+    adapter = CedarPDPAdapter(gov_key, bundle)
+
+    # Two tokens: one permissive (capability always ok), one that grants NO tools (capability
+    # always denies) -- so the capability path is exercised on both sides.
+    permissive = Token.issue(auth_key, "rover-01", root_grant(tools=all_tools))
+    restrictive = Token.issue(auth_key, "rover-01", root_grant(tools={"unrelated"}))
+
+    checked = 0
+    for token in (permissive, restrictive):
+        for tool in ["actuator_move", "self_destruct", "pay"]:
+            for cls in ["informational", "reversible", "financial", "kinetic"]:
+                for conf in [0.0, 0.5, 0.8, 0.95]:
+                    for threat in [0.0, 2.0]:
+                        for eng_err in [False, True]:
+                            cv = core.evaluate(token, tool, cls, "public", 1, conf, now=1,
+                                               threat_level=threat, engine_error=eng_err)
+                            dv = adapter.evaluate(token, tool, cls, "public", 1, conf, now=1,
+                                                  threat_level=threat, engine_error=eng_err)
+                            assert cv.allow == dv.allow and cv.fail_closed == dv.fail_closed, (
+                                f"DIVERGENCE token={token.effective().tools} tool={tool} "
+                                f"class={cls} conf={conf} threat={threat} err={eng_err}: "
+                                f"core=({cv.allow},{cv.fail_closed}) "
+                                f"adapter=({dv.allow},{dv.fail_closed})")
+                            checked += 1
+    print(f"    adapter full-Verdict parity holds across {checked} cases")
+
+
 # ---- runner ------------------------------------------------------------------
 
 def _run():

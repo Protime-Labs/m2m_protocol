@@ -61,6 +61,7 @@ class Gateway:
         behavioral: BehavioralAnalytics,
         timing: TimingMonitor | None = None,
         hygiene: HygieneOrchestrator | None = None,
+        observers: list | None = None,
     ):
         self.authority_key = authority_key
         self.pdp = pdp
@@ -71,6 +72,11 @@ class Gateway:
         self.behavioral = behavioral
         self.timing = timing or TimingMonitor()
         self.hygiene = hygiene
+        # Optional additive observers (real-signal fan-out: OTel emit, eBPF divergence).
+        # Each is `observe(outcome, agent_id, tool_name, canon)`; it may append to
+        # `outcome.iocs` and/or emit externally. Empty by default, so the offline hot path
+        # is byte-identical. IOC-producing observers should precede emit-only ones.
+        self.observers = observers or []
         self._tokens: dict[str, Token] = {}   # last-seen token per agent (for hygiene)
 
     def call(
@@ -210,6 +216,11 @@ class Gateway:
             out.iocs.append(t_ioc)
         # Behavioral drift (corroboration signal).
         drift: DriftSignal = self.behavioral.observe_call(agent_id, tool_name, cost)
+        # Additive observers (real-signal fan-out). Run BEFORE hygiene so an observer that
+        # produces a corroborating IOC (e.g. eBPF runtime divergence) feeds the response;
+        # emit-only observers (e.g. OTel) then see the full IOC set. No-op when empty.
+        for observe in self.observers:
+            observe(out, agent_id, tool_name, canon)
         # Autonomous graduated hygiene (W3) -- fire if we have any IOC.
         if self.hygiene and out.iocs and agent_id in self._tokens:
             for ioc in out.iocs:

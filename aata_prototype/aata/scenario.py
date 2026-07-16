@@ -8,7 +8,8 @@ This is the "overlay around an unmodified estate": we register a few tools
 from __future__ import annotations
 
 import secrets
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Callable
 
 from . import embodiment
 from .behavioral import BehavioralAnalytics
@@ -23,6 +24,34 @@ from .recorder import FlightRecorder
 from .sandbox import ResourceAttestation, Sandbox, Tool
 
 GOLDEN_PLATFORM_QUOTE = "TPM-PCR:golden-firmware+kernel+runtime"
+
+
+@dataclass
+class Backends:
+    """Optional real backends injected into `build_estate`/`birth`.
+
+    Every default is a pure-core stand-in, so the offline path imports NO integration
+    (`grep 'from integrations' aata/` stays empty). `integrations/wiring.py::select_backends`
+    builds a real one from the installed libs + env flags, and the demos/tests pass it via
+    `build_estate(backends=...)`. The core never reaches into `integrations/`.
+    """
+    recorder_factory: Callable[[], object] | None = None          # () -> FlightRecorder-like
+    pdp_factory: Callable[[bytes, "PolicyBundle"], object] | None = None  # (gov_key, bundle) -> PDP-like
+    observers: list = field(default_factory=list)                 # gateway fan-out observers
+    attestor: object | None = None                                # real SPIFFE+cosign attestor
+    active: list = field(default_factory=list)                    # names of active real backends
+
+    def __post_init__(self):
+        if self.recorder_factory is None:
+            self.recorder_factory = lambda: FlightRecorder(name="authoritative")
+        if self.pdp_factory is None:
+            self.pdp_factory = lambda gov_key, bundle: PDP(gov_key, bundle)
+
+    def recorder(self):
+        return self.recorder_factory()
+
+    def make_pdp(self, gov_key: bytes, bundle: "PolicyBundle"):
+        return self.pdp_factory(gov_key, bundle)
 
 
 # --- the estate: a handful of tools spanning the actuation/irreversibility tiers
@@ -69,9 +98,11 @@ class Estate:
     hygiene: HygieneOrchestrator
     authoritative: FlightRecorder
     pdp_by_type: dict[str, PDP]        # per-embodiment-type policy posture (C6)
+    backends: Backends                 # which real backends (if any) are wired
 
 
-def build_estate(deterministic: bool = True) -> Estate:
+def build_estate(deterministic: bool = True, backends: Backends | None = None) -> Estate:
+    backends = backends or Backends()          # pure-core stand-ins unless a real one is passed
     if deterministic:
         authority_key = b"AUTH-KEY-DETERMINISTIC-000000000"
         registry_key = b"REGY-KEY-DETERMINISTIC-000000000"
@@ -91,6 +122,10 @@ def build_estate(deterministic: bool = True) -> Estate:
     manifest = SignedManifest.create(registry_key, artifacts)
 
     identity = IdentityAuthority(authority_key, registry_key, GOLDEN_PLATFORM_QUOTE)
+    # A real attestor (SPIFFE+cosign), if wired, signs the golden manifest now so it can
+    # verify each agent's artifacts at birth. No-op for the pure-core default.
+    if backends.attestor is not None:
+        backends.attestor.sign_golden(artifacts)
 
     sandbox = Sandbox()
     for t in _build_tools():
@@ -101,18 +136,18 @@ def build_estate(deterministic: bool = True) -> Estate:
         ttl_until=10_000,
         prohibited_tools=frozenset({"self_destruct"}),
     ).sign(gov_key)
-    pdp = PDP(gov_key, bundle)
+    pdp = backends.make_pdp(gov_key, bundle)
 
     # Per-embodiment-type PDPs: the constitutional compiler emits one signed bundle
     # per type, with the kinetic threshold tuned to that type's physical risk. This
     # is how mission control aligns to agentic purpose (an AV maneuver needs more
     # confidence than a rover drive at the same PDP).
     pdp_by_type = {
-        emb.id: PDP(gov_key, embodiment.policy_bundle(emb, gov_key))
+        emb.id: backends.make_pdp(gov_key, embodiment.policy_bundle(emb, gov_key))
         for emb in embodiment.EMBODIMENTS.values()
     }
 
-    authoritative = FlightRecorder(name="authoritative")
+    authoritative = backends.recorder()
     ddil = DDILController(authoritative)
     revocation = RevocationList()
     threat = ThreatRegister()
@@ -124,11 +159,11 @@ def build_estate(deterministic: bool = True) -> Estate:
     gateway = Gateway(
         authority_key=authority_key, pdp=pdp, sandbox=sandbox, ddil=ddil,
         revocation=revocation, threat=threat, behavioral=behavioral,
-        timing=TimingMonitor(), hygiene=hygiene,
+        timing=TimingMonitor(), hygiene=hygiene, observers=backends.observers,
     )
     return Estate(authority_key, registry_key, gov_key, identity, manifest,
                   artifacts, sandbox, pdp, ddil, revocation, threat,
-                  behavioral, gateway, hygiene, authoritative, pdp_by_type)
+                  behavioral, gateway, hygiene, authoritative, pdp_by_type, backends)
 
 
 def birth(estate: Estate, agent_id: str, tools: set[str],
@@ -142,11 +177,25 @@ def birth(estate: Estate, agent_id: str, tools: set[str],
     arts = artifacts if artifacts is not None else estate.artifacts
     att = estate.identity.attest(platform_quote, arts, estate.manifest)
     svid = estate.identity.issue_svid(agent_id, att, lease=lease)   # raises if !att.ok
+    # Real SPIFFE + cosign attestation (only when a real attestor is wired): verify the
+    # artifact manifest with a real cosign signature and issue+verify a real X.509 SVID. It
+    # GATES birth exactly like the core attestation -- a tampered artifact fails both. (The
+    # gateway hot path still validates the lightweight HMAC SVID; an X.509 SVID on the hot
+    # path is a flagged follow-on, since it changes the gateway's SVID-validation interface.)
+    real_att = None
+    if estate.backends.attestor is not None:
+        real_att = estate.backends.attestor.attest(agent_id, arts)
+        if not real_att.ok:
+            raise PermissionError(f"real (SPIFFE+cosign) attestation failed: {real_att.reason}")
     root = root_grant(tools=tools)
     token = Token.issue(estate.authority_key, agent_id, root)
-    estate.authoritative.append("birth", {
+    payload = {
         "agent": agent_id, "attestation_hash": att.attestation_hash[:12] + "...",
         "svid_lease_until": svid.lease_until, "tools": sorted(tools),
-    })
+    }
+    if real_att is not None:
+        payload["spiffe_id"] = real_att.spiffe_id       # real X.509 SVID identity
+        payload["cosign_ok"] = real_att.ok              # real signature over the digest manifest
+    estate.authoritative.append("birth", payload)
     estate.gateway.remember_token(agent_id, token)
     return svid, token

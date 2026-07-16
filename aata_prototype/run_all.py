@@ -56,6 +56,7 @@ def main():
         ("SPIFFE TESTS (X.509 SVID workload identity C2/C4 -- skips w/o cryptography)", "test_spiffe.py"),
         ("COSIGN TESTS (signed artifact registry C4 -- skips w/o cryptography)", "test_cosign.py"),
         ("CEDAR TESTS (real policy engine C6 + core-PDP parity -- skips w/o cedarpy)", "test_cedar.py"),
+        ("END-TO-END REAL (overlay wired on real Cedar+WORM+OTel+eBPF+SPIFFE/cosign -- skips w/o libs)", "test_end_to_end_real.py"),
     ]:
         step(title, "tests", name)
 
@@ -86,6 +87,7 @@ def main():
             ("demo_spiffe", "SPIFFE X.509 SVIDs (workload identity C2/C4 -- skips w/o crypto)"),
             ("demo_cosign", "COSIGN SIGNED REGISTRY (artifact provenance C4 -- skips w/o crypto)"),
             ("demo_cedar", "CEDAR POLICY ENGINE (real C6 authorization -- skips w/o cedarpy)"),
+            ("demo_all_real", "ALL-REAL WIRE-UP (overlay on real backends end-to-end -- skips w/o libs)"),
         ]:
             step(title, "demos", f"{name}.py")
     finally:
