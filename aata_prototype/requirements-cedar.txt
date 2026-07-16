@@ -1,0 +1,11 @@
+# Optional -- ONLY for the real Cedar policy engine (integrations/cedar/).
+# The core prototype and its offline suite need NONE of this; the core uses the hand-rolled
+# PDP (aata/pdp.py). Install to evaluate the constitution with the real cedar-policy engine:
+#
+#   pip install -r requirements-cedar.txt
+#   python demos/demo_cedar.py
+#
+# `cedarpy` is the Python binding to the Rust `cedar-policy` crate (AWS Cedar). The other
+# production option is OPA/Rego (policy/constitution.rego), which needs the external `opa`
+# Go binary; Cedar is the library-only, offline-validatable swap.
+cedarpy>=4.8

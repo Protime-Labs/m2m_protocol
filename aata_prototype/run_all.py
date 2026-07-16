@@ -55,6 +55,7 @@ def main():
         ("BISCUIT TESTS (Ed25519 capability tokens C5 -- skips w/o cryptography)", "test_biscuit.py"),
         ("SPIFFE TESTS (X.509 SVID workload identity C2/C4 -- skips w/o cryptography)", "test_spiffe.py"),
         ("COSIGN TESTS (signed artifact registry C4 -- skips w/o cryptography)", "test_cosign.py"),
+        ("CEDAR TESTS (real policy engine C6 + core-PDP parity -- skips w/o cedarpy)", "test_cedar.py"),
     ]:
         step(title, "tests", name)
 
@@ -84,6 +85,7 @@ def main():
             ("demo_biscuit", "BISCUIT Ed25519 TOKENS (asymmetric capability C5 -- skips w/o crypto)"),
             ("demo_spiffe", "SPIFFE X.509 SVIDs (workload identity C2/C4 -- skips w/o crypto)"),
             ("demo_cosign", "COSIGN SIGNED REGISTRY (artifact provenance C4 -- skips w/o crypto)"),
+            ("demo_cedar", "CEDAR POLICY ENGINE (real C6 authorization -- skips w/o cedarpy)"),
         ]:
             step(title, "demos", f"{name}.py")
     finally:
