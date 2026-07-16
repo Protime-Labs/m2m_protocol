@@ -172,14 +172,19 @@ production effort.
 
 The prototype's security *properties* are faithful; only the primitives are swapped.
 Each swap is a bounded, well-scoped task, and each named tool already ships a native
-offline mode (which is why the spec chose it).
+offline mode (which is why the spec chose it). The rows marked **✅** now ship a real,
+**offline-default** backend behind the same interface: installing the optional library
+turns on the real primitive without changing offline behavior, and the CI `integrations
+suite (library-only extras)` job installs them and runs their tests. The remaining rows
+either need external infrastructure CI can't host (a live S3 Object-Lock bucket, a NATS
+server) or an external binary (the OPA/Rego alternative to Cedar).
 
 | Concern | Prototype stand-in (stdlib) | Production swap |
 |---|---|---|
-| Capability signature | HMAC/BLAKE2 hash-chain seal | Biscuit Ed25519 block chain (`biscuit-python`) |
-| Workload identity | HMAC-signed SVID dataclass | SPIRE SVID (X.509/JWT) + Keylime TPM attestation |
-| Artifact signing | HMAC over digest map | cosign signatures over an OCI image manifest |
-| Policy engine | compact Python evaluator | OPA (`policy/constitution.rego`) or Cedar, signed bundle + TTL |
+| Capability signature | HMAC/BLAKE2 hash-chain seal | Biscuit Ed25519 block chain — ✅ [`integrations/biscuit/`](aata_prototype/integrations/biscuit/) |
+| Workload identity | HMAC-signed SVID dataclass | SPIRE X.509 SVID (+ Keylime TPM for the hardware root) — ✅ [`integrations/spiffe/`](aata_prototype/integrations/spiffe/) |
+| Artifact signing | HMAC over digest map | cosign detached Ed25519 signature over the digest manifest — ✅ [`integrations/cosign/`](aata_prototype/integrations/cosign/) |
+| Policy engine | compact Python evaluator | Cedar engine (`cedarpy`), core-PDP-parity tested — ✅ [`integrations/cedar/`](aata_prototype/integrations/cedar/); OPA/Rego alt in [`policy/constitution.rego`](aata_prototype/policy/constitution.rego) |
 | Sandbox / runtime sensor | in-process sandbox + self-reported attestation | gVisor/Kata; Tetragon/Falco eBPF ground truth — ✅ [`integrations/ebpf/`](aata_prototype/integrations/ebpf/) |
 | WORM store | in-memory hash-chain | immudb / S3 Object-Lock + Merkle anchoring — ✅ [`integrations/worm/`](aata_prototype/integrations/worm/) |
 | Bus / store-and-forward | direct ledger writes | NATS JetStream leaf nodes — ✅ [`integrations/nats/`](aata_prototype/integrations/nats/) |
