@@ -1,0 +1,12 @@
+# Optional -- ONLY for a real WORM backend (integrations/worm/).
+# The core prototype, its tests, and the offline demo need NONE of this;
+# offline, evidence is mirrored to an in-memory write-once backend.
+#
+#   pip install -r requirements-worm.txt
+#   AATA_WORM=s3 AATA_WORM_S3_BUCKET=my-object-lock-bucket python demos/demo_worm.py
+#
+# S3 Object-Lock: the bucket must be created with Object-Lock enabled; records/anchors are
+# written with COMPLIANCE retention so they cannot be overwritten or deleted until it lapses.
+boto3>=1.28
+# immudb is an alternative WORM target (immutable, cryptographically-verifiable KV):
+#   immudb-py>=1.4
