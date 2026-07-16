@@ -53,6 +53,7 @@ def main():
         ("NATS TESTS (store-and-forward + custody-transfer replay, offline)", "test_nats.py"),
         ("EBPF TESTS (runtime-sensor ground-truth divergence, offline)", "test_ebpf.py"),
         ("BISCUIT TESTS (Ed25519 capability tokens C5 -- skips w/o cryptography)", "test_biscuit.py"),
+        ("SPIFFE TESTS (X.509 SVID workload identity C2/C4 -- skips w/o cryptography)", "test_spiffe.py"),
     ]:
         step(title, "tests", name)
 
@@ -80,6 +81,7 @@ def main():
             ("demo_nats", "NATS STORE-AND-FORWARD (DDIL ledger transport C8/W4 -- offline)"),
             ("demo_ebpf", "RUNTIME SENSOR (kernel ground-truth divergence C3 -- offline)"),
             ("demo_biscuit", "BISCUIT Ed25519 TOKENS (asymmetric capability C5 -- skips w/o crypto)"),
+            ("demo_spiffe", "SPIFFE X.509 SVIDs (workload identity C2/C4 -- skips w/o crypto)"),
         ]:
             step(title, "demos", f"{name}.py")
     finally:

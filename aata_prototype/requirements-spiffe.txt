@@ -1,0 +1,11 @@
+# Optional -- ONLY for real SPIFFE X.509 SVIDs (integrations/spiffe/).
+# The core prototype and its offline suite need NONE of this; the core uses the
+# HMAC-signed SVID (aata/identity.py). Install to run the real X.509 identity primitive:
+#
+#   pip install -r requirements-spiffe.txt
+#   python demos/demo_spiffe.py
+#
+# `cryptography` provides X.509 + Ed25519. In a full production deployment the issuer is
+# SPIRE (with Keylime/TPM node attestation for the hardware root); this module issues and
+# verifies the same X.509 SVID shape directly.
+cryptography>=42
