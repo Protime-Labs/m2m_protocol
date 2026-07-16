@@ -49,6 +49,7 @@ def main():
         ("GOVERNANCE-CONSOLE TESTS (C12 copilot, reads-only, offline)", "test_governance_console.py"),
         ("OTEL TESTS (real-signal emission, additive, offline)", "test_otel.py"),
         ("WORM TESTS (durable write-once evidence store, offline)", "test_worm.py"),
+        ("NATS TESTS (store-and-forward + custody-transfer replay, offline)", "test_nats.py"),
     ]:
         step(title, "tests", name)
 
@@ -63,7 +64,8 @@ def main():
 
     # The integration demos run OFFLINE-forced here (env flags cleared) so the suite stays
     # deterministic and network-free even if a developer has AATA_LLM_BRAIN / AATA_OTEL set.
-    saved = {k: os.environ.pop(k, None) for k in ("AATA_LLM_BRAIN", "AATA_OTEL", "AATA_WORM")}
+    saved = {k: os.environ.pop(k, None)
+             for k in ("AATA_LLM_BRAIN", "AATA_OTEL", "AATA_WORM", "AATA_NATS")}
     try:
         for name, title in [
             ("demo_llm_agent", "LLM-AGENT CAPABILITY (Claude as governed workload -- offline)"),
@@ -72,6 +74,7 @@ def main():
             ("demo_governance_console", "GOVERNANCE CONSOLE (C12 copilot -- drafts, offline)"),
             ("demo_otel", "OTEL EMISSION (real signal pipeline C8 -- offline capture)"),
             ("demo_worm", "WORM EVIDENCE STORE (durable write-once C9 -- offline)"),
+            ("demo_nats", "NATS STORE-AND-FORWARD (DDIL ledger transport C8/W4 -- offline)"),
         ]:
             step(title, "demos", f"{name}.py")
     finally:

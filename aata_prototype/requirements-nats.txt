@@ -1,0 +1,11 @@
+# Optional -- ONLY for a real NATS JetStream bus (integrations/nats/).
+# The core prototype, its tests, and the offline demo need NONE of this;
+# offline, the DDIL store-and-forward ledger uses an in-memory durable bus.
+#
+#   pip install -r requirements-nats.txt
+#   AATA_NATS=nats://localhost:4222 python demos/demo_nats.py
+#
+# Requires a running NATS server with JetStream enabled (e.g. `nats-server -js`).
+# In production these are leaf nodes that store-and-forward under disconnection and
+# sync to the hub on reconnect.
+nats-py>=2.6
