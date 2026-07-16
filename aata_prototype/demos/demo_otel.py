@@ -21,6 +21,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
 from aata.scenario import build_estate, birth
+from aata.irreversibility import score_for
 from integrations.anthropic import GovernedAgent, dispatch
 from integrations.otel import TelemetryEmitter, enabled
 
@@ -50,8 +51,10 @@ def main() -> None:
         _, _, rec = dispatch(est, agent, tool,
                              {"arg": arg, "rationale": rationale, "confidence": conf},
                              task_id="otel-demo")
+        ac = est.sandbox.get(tool).actuation_class
         emitter.emit_call(agent.agent_id, tool, rec.decision, rec.allowed,
-                          rec.evidence_seq, [i.kind for i in rec.iocs], rec.confidence)
+                          rec.evidence_seq, [i.kind for i in rec.iocs], rec.confidence,
+                          irreversibility=score_for(tool, ac))
         for i in rec.iocs:
             emitter.emit_ioc(i.agent_id, i.kind, i.severity, i.detail)
 

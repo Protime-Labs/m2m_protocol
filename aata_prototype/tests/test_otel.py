@@ -55,6 +55,18 @@ def test_every_per_agent_signal_carries_agent_id():
     assert per_agent and all(s.agent == "rover-01" for s in per_agent)
 
 
+def test_w1_signal_can_carry_irreversibility_score():
+    from aata.irreversibility import score_for
+    em = TelemetryEmitter()
+    kinetic = score_for("actuator_move", "kinetic")
+    info = score_for("sensor_read", "informational")
+    em.emit_call("a", "actuator_move", "deny", False, None, [], 0.4, irreversibility=kinetic)
+    em.emit_call("a", "sensor_read", "allow", True, 1, [], 0.95, irreversibility=info)
+    w1 = [s for s in em.signals if s.name == "aata.w1"]
+    assert w1[0].attrs["irreversibility"] == kinetic and w1[1].attrs["irreversibility"] == info
+    assert kinetic > info                                    # graded, per spec 10.11
+
+
 def test_w1_signal_reflects_the_gateway_verdict():
     _, em = _run_scenario()
     w1 = [s for s in em.signals if s.name == "aata.w1"]

@@ -21,6 +21,7 @@ from aata.clock import CLOCK
 from aata.ddil import Tier
 from aata.embodiment import EMBODIMENTS, coverage_matrix
 from aata.fleet import MissionOrchestrator, TaskStatus
+from aata.irreversibility import taxonomy
 from aata.scenario import build_estate, birth
 from integrations.anthropic import GovernedAgent, SemanticJudge, as_ioc, dispatch
 
@@ -552,6 +553,7 @@ def main():
         "evidence": evidence,
         "fleet": run_fleet(),
         "llm_governance": run_llm_governance(),
+        "irreversibility": taxonomy(),
     }
 
     os.makedirs(OUT, exist_ok=True)

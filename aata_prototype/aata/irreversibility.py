@@ -72,6 +72,11 @@ def rate_tool(tool: str, actuation_class: str) -> Rating:
     return TOOL_RATINGS.get(tool) or CLASS_RATINGS[actuation_class]
 
 
+def score_for(tool: str, actuation_class: str) -> float:
+    """The composite irreversibility score for a tool call (per-tool, else per-class)."""
+    return rate_tool(tool, actuation_class).score()
+
+
 def is_irreversible(score: float, threshold: float = IRREVERSIBLE_THRESHOLD) -> bool:
     return score >= threshold
 

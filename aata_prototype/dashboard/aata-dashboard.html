@@ -5465,6 +5465,86 @@ window.AATA = {
       "judge_records": 5,
       "merkle_root": "f0549ede6aeda2c04f4640b838235ef341d9645603224b3ff718ee6496ea7001"
     }
+  },
+  "irreversibility": {
+    "threshold": 0.5,
+    "weights": {
+      "reversibility": 0.4,
+      "blast_radius": 0.3,
+      "latency_to_effect": 0.2,
+      "opacity": 0.1
+    },
+    "classes": {
+      "informational": {
+        "reversibility": 0.0,
+        "blast_radius": 0.1,
+        "latency_to_effect": 0.0,
+        "opacity": 0.1,
+        "score": 0.04
+      },
+      "reversible": {
+        "reversibility": 0.3,
+        "blast_radius": 0.3,
+        "latency_to_effect": 0.2,
+        "opacity": 0.2,
+        "score": 0.27
+      },
+      "financial": {
+        "reversibility": 0.85,
+        "blast_radius": 0.6,
+        "latency_to_effect": 0.5,
+        "opacity": 0.3,
+        "score": 0.65
+      },
+      "kinetic": {
+        "reversibility": 1.0,
+        "blast_radius": 0.9,
+        "latency_to_effect": 1.0,
+        "opacity": 0.4,
+        "score": 0.91
+      }
+    },
+    "tools": {
+      "sensor_read": {
+        "reversibility": 0.0,
+        "blast_radius": 0.1,
+        "latency_to_effect": 0.0,
+        "opacity": 0.1,
+        "score": 0.04
+      },
+      "db_query": {
+        "reversibility": 0.0,
+        "blast_radius": 0.1,
+        "latency_to_effect": 0.0,
+        "opacity": 0.1,
+        "score": 0.04
+      },
+      "purchase": {
+        "reversibility": 0.85,
+        "blast_radius": 0.6,
+        "latency_to_effect": 0.5,
+        "opacity": 0.3,
+        "score": 0.65
+      },
+      "actuator_move": {
+        "reversibility": 1.0,
+        "blast_radius": 0.9,
+        "latency_to_effect": 1.0,
+        "opacity": 0.4,
+        "score": 0.91
+      },
+      "assemble": {
+        "reversibility": 1.0,
+        "blast_radius": 0.9,
+        "latency_to_effect": 1.0,
+        "opacity": 0.4,
+        "score": 0.91
+      }
+    },
+    "irreversible_classes": [
+      "financial",
+      "kinetic"
+    ]
   }
 };
 </script>

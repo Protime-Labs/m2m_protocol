@@ -108,12 +108,15 @@ class TelemetryEmitter:
     # -- emit one governed W1 call (from a CallOutcome + ToolCallRecord) ----
     def emit_call(self, agent_id: str, tool: str, decision: str, allowed: bool,
                   evidence_seq: int | None, ioc_kinds: list[str] | None = None,
-                  confidence: float | None = None) -> Signal:
+                  confidence: float | None = None,
+                  irreversibility: float | None = None) -> Signal:
         attrs = {"tool": tool, "decision": decision, "allowed": allowed,
                  "evidence_seq": -1 if evidence_seq is None else evidence_seq,
                  "iocs": ",".join(ioc_kinds or [])}
         if confidence is not None:
             attrs["confidence"] = confidence
+        if irreversibility is not None:            # graded irreversibility (spec 10.11)
+            attrs["irreversibility"] = irreversibility
         return self._emit(Signal("aata.w1", agent_id, attrs))
 
     def emit_ioc(self, agent_id: str, kind: str, severity: float, detail: str = "") -> Signal:
