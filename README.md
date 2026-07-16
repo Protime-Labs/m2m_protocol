@@ -27,6 +27,7 @@ behavior.
 | Path | What it is |
 |---|---|
 | **[`aata_prototype/`](aata_prototype/)** | The runnable reference prototype + web console. Dependency-free Python 3.10+. Start here. |
+| [`aata_prototype/integrations/`](aata_prototype/integrations/) | Opt-in, offline-default integrations — the Anthropic capability + the real-signal pipeline (OTel / WORM / NATS). See [Real-system integrations](#real-system-integrations-anthropic--real-signals). |
 | `AATA_Framework_v1.0.pdf` | **Part I** — the framework: threat model, planes, principles (P1–P7), standards mapping. |
 | `AATA_PartII_Component_Tooling_Spec_v1.0.pdf` | **Part II** — the twelve components (C1–C12), tooling, and DDIL behavior per component. |
 | `AATA_PartIII_Workflows_FutureProofing_v1.0.pdf` | **Part III** — the four workflows (W1–W4) and future-proofing. |
@@ -46,12 +47,14 @@ Requires only Python **3.10+** (validated on 3.13). No `pip install`, no network
 git clone https://github.com/Protime-Labs/m2m_protocol.git
 cd m2m_protocol/aata_prototype
 
-python run_all.py        # invariant tests + fleet tests + all 4 demos + the blackout drill
+python run_all.py        # the whole suite: tests + all demos + the blackout drill
 ```
 
-Expected: **12/12 invariant tests**, **8/8 fleet tests**, W1–W4 demos, and the
-blackout drill reporting `continuity / containment / evidence-integrity = PASS`
-with the semantic gap documented (by design).
+Expected: **85 tests pass** — core invariants + fleet + DDIL reconciliation + the LLM and
+real-signal integrations, all offline — then the W1–W4 demos and the blackout drill report
+`continuity / containment / evidence-integrity = PASS` with the semantic gap documented
+(by design). The suite is **CI-enforced across Python 3.10–3.13**, and `run_all.py` exits
+non-zero on any failure.
 
 ### Launch the evidence console
 
@@ -109,6 +112,31 @@ graduated hygiene, zero evidence loss across disconnection, tamper-evident evide
 
 ---
 
+## Real-system integrations (Anthropic + real signals)
+
+Beyond the stdlib core, [`aata_prototype/integrations/`](aata_prototype/integrations/) adds
+**opt-in, offline-default** integrations that make the overlay a real system — each
+preserving the framework's discipline (Claude is never on the deterministic enforcement
+path; the load-bearing invariants stay intact and CI-pinned).
+
+**Anthropic capability** ([`integrations/anthropic/`](aata_prototype/integrations/anthropic/)) — four honest Claude roles:
+- **Governed workload** — real Claude agents whose *every* tool call transits the C1 gateway (the model cannot act un-gated; stated intent is recorded, never trusted).
+- **Semantic judge (C11)** — an advisory classifier that *surfaces* the spec-10.1 semantic-gap attack the syntactic gates allow; recorded and corroboration-gated, never authoritative.
+- **Red-team harness** — labeled adversaries probe the overlay and score efficacy (recall/precision, containment, honestly-reported gaps — not an all-green rig).
+- **Governance Console copilot (C12)** — Claude drafts incident summaries / justification packages from the evidence chain for human sign-off (reads-only; provenance, not adjudication).
+
+**Real signal pipeline** — the spec's production tooling, behind the existing interfaces:
+- **OpenTelemetry emission** ([`integrations/otel/`](aata_prototype/integrations/otel/)) — the overlay's signals as real OTel spans (C8), additive; every signal carries the `agent_id` join key.
+- **WORM evidence store** ([`integrations/worm/`](aata_prototype/integrations/worm/)) — durable write-once persistence + external Merkle anchor (immudb / S3 Object-Lock), with round-trip re-verification, preserving the synchronous fail-closed ACK (C9).
+- **NATS store-and-forward** ([`integrations/nats/`](aata_prototype/integrations/nats/)) — the DDIL ledger backed by a durable bus with FIFO custody-transfer replay on reconnect (C8 / W4).
+
+Every integration is **offline by default** (in-memory backends, no third-party imports) so
+the whole suite and CI stay dependency-free and deterministic; the real backends
+(`anthropic`, `opentelemetry`, `boto3`, `nats-py`) are opt-in via a `requirements-*.txt` +
+an env flag. Each folder has its own README with the enable steps and honesty notes.
+
+---
+
 ## Adoption
 
 AATA is an **overlay**: you deploy it around an existing estate without modifying
@@ -152,8 +180,9 @@ offline mode (which is why the spec chose it).
 | Artifact signing | HMAC over digest map | cosign signatures over an OCI image manifest |
 | Policy engine | compact Python evaluator | OPA (`policy/constitution.rego`) or Cedar, signed bundle + TTL |
 | Sandbox | in-process sandbox + single-use cred | gVisor/Kata; Tetragon/Falco eBPF for kernel ground truth |
-| WORM store | in-memory hash-chain | immudb / S3 Object-Lock + periodic Merkle anchoring |
-| Bus / store-and-forward | direct ledger writes | NATS JetStream leaf nodes; DTN Bundle Protocol custody |
+| WORM store | in-memory hash-chain | immudb / S3 Object-Lock + Merkle anchoring — ✅ [`integrations/worm/`](aata_prototype/integrations/worm/) |
+| Bus / store-and-forward | direct ledger writes | NATS JetStream leaf nodes — ✅ [`integrations/nats/`](aata_prototype/integrations/nats/) |
+| Telemetry / observability | direct in-process signals | OTel GenAI spans → collector — ✅ [`integrations/otel/`](aata_prototype/integrations/otel/) |
 
 ### Standards alignment
 
