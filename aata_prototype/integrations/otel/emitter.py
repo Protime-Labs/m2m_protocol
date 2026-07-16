@@ -54,24 +54,26 @@ class _CaptureBackend:
 
 class _OTelBackend:
     """Opt-in: emit one OpenTelemetry span per signal."""
-    def __init__(self):
-        from opentelemetry import trace                                  # lazy
-        from opentelemetry.sdk.resources import Resource
+    def __init__(self, exporter=None):
+        from opentelemetry.sdk.resources import Resource                  # lazy
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
-        if os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"):
-            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-                OTLPSpanExporter,
-            )
-            exporter = OTLPSpanExporter()
-        else:
-            exporter = ConsoleSpanExporter()
+        if exporter is None:                                             # injectable for tests
+            if os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"):
+                from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+                    OTLPSpanExporter,
+                )
+                exporter = OTLPSpanExporter()
+            else:
+                exporter = ConsoleSpanExporter()
 
         provider = TracerProvider(resource=Resource.create({"service.name": RESOURCE_SERVICE}))
         provider.add_span_processor(BatchSpanProcessor(exporter))
         self._provider = provider
-        self._tracer = trace.get_tracer("aata.overlay")
+        # Bind the tracer to THIS provider (not the global no-op one), or spans would be
+        # created on a tracer whose processor/exporter we never flush -> silently dropped.
+        self._tracer = provider.get_tracer("aata.overlay")
         self.signals: list[Signal] = []      # also retained for parity with capture
 
     def emit(self, sig: Signal) -> None:

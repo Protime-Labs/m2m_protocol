@@ -111,6 +111,29 @@ def test_offline_path_never_imports_opentelemetry():
     assert "opentelemetry" not in sys.modules
 
 
+def test_real_otel_backend_actually_exports_spans():
+    """Regression: spans must reach the exporter (the tracer must bind to OUR provider,
+    not the global no-op one). Runs only when the OTel SDK is installed; the base offline
+    suite / CI skips it -- the CI 'integrations-extra' job exercises it."""
+    import importlib.util
+    if importlib.util.find_spec("opentelemetry") is None:
+        print("    (skip: opentelemetry not installed)")
+        return
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+    from integrations.otel.emitter import _OTelBackend
+
+    exporter = InMemorySpanExporter()
+    em = TelemetryEmitter(backend=_OTelBackend(exporter=exporter))
+    em.emit_call("rover-9", "sensor_read", "allow", True, 1, [], 0.95)
+    em.emit_ioc("rover-9", "encoding", 0.6, "zw")
+    em.flush()
+    spans = exporter.get_finished_spans()
+    names = [s.name for s in spans]
+    assert "aata.w1" in names and "aata.ioc" in names        # actually exported, not dropped
+    w1 = next(s for s in spans if s.name == "aata.w1")
+    assert w1.attributes["aata.agent"] == "rover-9"          # agent_id join key on the real span
+
+
 # ---- runner ------------------------------------------------------------------
 
 def _run():
