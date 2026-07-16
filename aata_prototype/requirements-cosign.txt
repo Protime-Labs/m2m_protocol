@@ -1,0 +1,12 @@
+# Optional -- ONLY for real cosign-style signed manifests (integrations/cosign/).
+# The core prototype and its offline suite need NONE of this; the core uses the
+# HMAC-signed golden manifest (aata/identity.py::SignedManifest). Install to run the real
+# detached-signature registry primitive:
+#
+#   pip install -r requirements-cosign.txt
+#   python demos/demo_cosign.py
+#
+# `cryptography` provides Ed25519. In a full production deployment the signer is cosign
+# against an OCI registry (optionally keyless via Fulcio/Rekor); this module signs and
+# verifies the same digest-manifest shape directly.
+cryptography>=42
