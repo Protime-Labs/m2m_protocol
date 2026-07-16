@@ -42,6 +42,7 @@ def main():
     for title, name in [
         ("INVARIANT TESTS (aata guarantees as executable assertions)", "test_invariants.py"),
         ("FLEET TESTS (heterogeneous-fleet guarantees)", "test_fleet.py"),
+        ("DDIL TESTS (store-and-forward, reconciliation, merkle invariants)", "test_ddil.py"),
         ("LLM-AGENT TESTS (Claude-as-governed-workload guarantees, offline)", "test_llm_agent.py"),
         ("SEMANTIC-JUDGE TESTS (advisory C11 intent classifier, offline)", "test_semantic_judge.py"),
         ("RED-TEAM TESTS (adversary probes + efficacy scorecard, offline)", "test_redteam.py"),
