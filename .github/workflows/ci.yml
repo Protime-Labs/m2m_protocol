@@ -25,3 +25,22 @@ jobs:
       - name: Run the AATA prototype suite (offline, no deps)
         working-directory: aata_prototype
         run: python run_all.py
+
+  integrations-extra:
+    name: integrations suite (library-only extras)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      # Install ONLY the library-only optional backends (no external services):
+      # opentelemetry (real span export) + cryptography (Biscuit Ed25519). Their tests
+      # skip on the offline job above; here they actually run. Service-backed adapters
+      # (S3 Object-Lock, NATS server) still can't run in CI and stay documented.
+      - name: Install library-only extras
+        run: pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http cryptography
+      - name: Run the suite with extras (exercises the real OTel + Biscuit paths)
+        working-directory: aata_prototype
+        run: python run_all.py
