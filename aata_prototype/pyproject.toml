@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aata-overlay"
+version = "0.1.0"
+description = "AATA (Autonomous Agent Trust Architecture) reference overlay -- an offline-default, deterministic core with opt-in real backends."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "BSL-1.1" }
+authors = [{ name = "Protime Consulting", email = "info@protimeconsulting.com" }]
+
+# The CORE (aata/) is stdlib-only and fully offline -- it has NO runtime dependencies.
+# Real backends are opt-in extras below; installing one turns on that integration behind
+# its enabled()/env gate without changing the offline default behavior.
+dependencies = []
+
+[project.optional-dependencies]
+cedar   = ["cedarpy>=4.8"]                                                              # C6  real Cedar policy engine
+biscuit = ["cryptography>=42"]                                                          # C5  Ed25519 capability tokens
+spiffe  = ["cryptography>=42"]                                                          # C2/C4 X.509 SVID workload identity
+cosign  = ["cryptography>=42"]                                                          # C4  signed artifact registry
+otel    = ["opentelemetry-sdk>=1.20", "opentelemetry-exporter-otlp-proto-http>=1.20"]  # C8  telemetry spans
+worm    = ["boto3>=1.28"]                                                               # C9  S3 Object-Lock WORM store
+nats    = ["nats-py>=2.6"]                                                              # C8/W4 store-and-forward bus
+llm     = ["anthropic>=0.69"]                                                           # Claude governed-workload / advisory roles
+
+# Library-only backends CI exercises WITHOUT any external service (Cedar + the crypto swaps
+# + OTel). This is exactly what the CI 'integrations-extra' job installs:
+#   pip install -e ".[integrations]"
+integrations = [
+  "cedarpy>=4.8",
+  "cryptography>=42",
+  "opentelemetry-sdk>=1.20",
+  "opentelemetry-exporter-otlp-proto-http>=1.20",
+]
+
+# Everything, for a full local/dev setup -- adds the service- and key-backed adapters
+# (S3 Object-Lock, NATS JetStream, Anthropic) that need infra/credentials to run for real.
+all = [
+  "cedarpy>=4.8",
+  "cryptography>=42",
+  "opentelemetry-sdk>=1.20",
+  "opentelemetry-exporter-otlp-proto-http>=1.20",
+  "boto3>=1.28",
+  "nats-py>=2.6",
+  "anthropic>=0.69",
+]
+
+[tool.setuptools.packages.find]
+# Install the core overlay and the integration adapters; demos/ and tests/ stay out of the
+# wheel (they run in-place via `python run_all.py`).
+include = ["aata*", "integrations*"]

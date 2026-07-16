@@ -7,7 +7,7 @@ risk and there is no rollback resistance. This integration is the real thing: **
 on Ed25519**.
 
 ```bash
-pip install -r requirements-biscuit.txt   # cryptography
+pip install -e ".[biscuit]"   # cryptography  (or: pip install -r requirements-biscuit.txt)
 python demos/demo_biscuit.py
 ```
 

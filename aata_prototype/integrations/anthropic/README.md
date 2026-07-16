@@ -9,7 +9,7 @@ the core stays dependency-free, offline, and deterministic.
 python demos/demo_llm_agent.py
 
 # live: a real Claude agent pursues a goal; every call is gated + recorded
-pip install -r requirements-llm.txt
+pip install -e ".[llm]"   # anthropic  (or: pip install -r requirements-llm.txt)
 export ANTHROPIC_API_KEY=...            # or: ant auth login
 AATA_LLM_BRAIN=1 python demos/demo_llm_agent.py
 ```

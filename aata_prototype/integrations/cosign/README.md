@@ -8,7 +8,7 @@ real thing: a **detached [cosign](https://github.com/sigstore/cosign)-style sign
 the digest manifest**, on Ed25519.
 
 ```bash
-pip install -r requirements-cosign.txt   # cryptography
+pip install -e ".[cosign]"   # cryptography  (or: pip install -r requirements-cosign.txt)
 python demos/demo_cosign.py
 ```
 

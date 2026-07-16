@@ -8,7 +8,7 @@ and evaluated by the actual [`cedarpy`](https://pypi.org/project/cedarpy/) engin
 `cedar-policy` crate).
 
 ```bash
-pip install -r requirements-cedar.txt   # cedarpy
+pip install -e ".[cedar]"   # cedarpy  (or: pip install -r requirements-cedar.txt)
 python demos/demo_cedar.py
 ```
 

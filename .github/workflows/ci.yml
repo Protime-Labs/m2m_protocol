@@ -35,13 +35,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      # Install ONLY the library-only optional backends (no external services):
-      # opentelemetry (real span export) + cryptography (Biscuit/SPIFFE/cosign Ed25519) +
-      # cedarpy (the real Cedar policy engine). Their tests skip on the offline job above;
-      # here they actually run. Service-backed adapters (S3 Object-Lock, NATS server) still
-      # can't run in CI and stay documented.
-      - name: Install library-only extras
-        run: pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http cryptography cedarpy
+      # Install the overlay + its library-only extras (no external services): the `integrations`
+      # extra pulls cedarpy + cryptography + opentelemetry (Cedar / Biscuit / SPIFFE / cosign /
+      # OTel). Their guarded tests skip on the offline job above; here they actually run.
+      # Service-backed adapters (S3 Object-Lock, NATS server) still can't run in CI (see the
+      # `all` extra + docs/live-validation.md).
+      - name: Install the overlay + library-only extras (editable)
+        working-directory: aata_prototype
+        run: pip install -e ".[integrations]"
       - name: Run the suite with extras (exercises the real OTel + Biscuit + SPIFFE + cosign + Cedar paths)
         working-directory: aata_prototype
         run: python run_all.py

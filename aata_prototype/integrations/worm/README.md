@@ -10,7 +10,7 @@ and can round-trip the chain back out of the store and re-verify it.
 python demos/demo_worm.py
 
 # real S3 Object-Lock (bucket must have Object-Lock enabled)
-pip install -r requirements-worm.txt
+pip install -e ".[worm]"   # boto3  (or: pip install -r requirements-worm.txt)
 AATA_WORM=s3 AATA_WORM_S3_BUCKET=my-object-lock-bucket python demos/demo_worm.py
 ```
 

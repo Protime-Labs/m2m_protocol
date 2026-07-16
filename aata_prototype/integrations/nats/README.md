@@ -10,7 +10,7 @@ continuous audit chain, zero evidence loss — gated on fleet re-attestation.
 python demos/demo_nats.py
 
 # real NATS JetStream (server with -js enabled)
-pip install -r requirements-nats.txt
+pip install -e ".[nats]"   # nats-py  (or: pip install -r requirements-nats.txt)
 AATA_NATS=nats://localhost:4222 python demos/demo_nats.py
 ```
 

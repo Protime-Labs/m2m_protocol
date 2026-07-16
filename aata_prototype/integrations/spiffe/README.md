@@ -6,7 +6,7 @@ holds the same key that issues) and not a standards-based document. This integra
 the real primitive: **SPIFFE X.509 SVIDs** on Ed25519.
 
 ```bash
-pip install -r requirements-spiffe.txt   # cryptography
+pip install -e ".[spiffe]"   # cryptography  (or: pip install -r requirements-spiffe.txt)
 python demos/demo_spiffe.py
 ```
 

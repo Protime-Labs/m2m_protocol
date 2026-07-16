@@ -50,11 +50,26 @@ cd m2m_protocol/aata_prototype
 python run_all.py        # the whole suite: tests + all demos + the blackout drill
 ```
 
-Expected: **85 tests pass** — core invariants + fleet + DDIL reconciliation + the LLM and
+Expected: **142 tests pass** — core invariants + fleet + DDIL reconciliation + the LLM and
 real-signal integrations, all offline — then the W1–W4 demos and the blackout drill report
 `continuity / containment / evidence-integrity = PASS` with the semantic gap documented
 (by design). The suite is **CI-enforced across Python 3.10–3.13**, and `run_all.py` exits
-non-zero on any failure.
+non-zero on any failure. The real-backend tests (Cedar, Biscuit, SPIFFE, cosign, and the
+end-to-end wire-up) **skip cleanly** when their optional libraries are absent.
+
+### Turn on the real backends (optional)
+
+The core is offline and dependency-free; installing an extra turns on a real backend behind
+its `enabled()`/env gate without changing offline behavior. Editable install exposes the
+`aata`/`integrations` packages and the extras:
+
+```bash
+pip install -e ".[integrations]"   # library-only real backends CI runs: Cedar, crypto swaps, OTel
+pip install -e ".[all]"            # + service/key-backed adapters (S3 Object-Lock, NATS, Anthropic)
+pip install -e ".[cedar]"          # or a single backend by name (cedar|biscuit|spiffe|cosign|otel|worm|nats|llm)
+
+python demos/demo_all_real.py      # the overlay running end-to-end on the real backends
+```
 
 ### Launch the evidence console
 

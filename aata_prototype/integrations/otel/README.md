@@ -8,7 +8,7 @@ as **real OpenTelemetry spans** for a collector to ingest.
 python demos/demo_otel.py
 
 # real OpenTelemetry -> console
-pip install -r requirements-otel.txt
+pip install -e ".[otel]"   # (or: pip install -r requirements-otel.txt)
 AATA_OTEL=1 python demos/demo_otel.py
 
 # ship to a collector (e.g. an OTLP/HTTP endpoint)
