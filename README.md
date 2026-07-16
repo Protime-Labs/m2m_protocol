@@ -129,6 +129,7 @@ path; the load-bearing invariants stay intact and CI-pinned).
 - **OpenTelemetry emission** ([`integrations/otel/`](aata_prototype/integrations/otel/)) — the overlay's signals as real OTel spans (C8), additive; every signal carries the `agent_id` join key.
 - **WORM evidence store** ([`integrations/worm/`](aata_prototype/integrations/worm/)) — durable write-once persistence + external Merkle anchor (immudb / S3 Object-Lock), with round-trip re-verification, preserving the synchronous fail-closed ACK (C9).
 - **NATS store-and-forward** ([`integrations/nats/`](aata_prototype/integrations/nats/)) — the DDIL ledger backed by a durable bus with FIFO custody-transfer replay on reconnect (C8 / W4).
+- **Runtime sensor** ([`integrations/ebpf/`](aata_prototype/integrations/ebpf/)) — kernel ground truth (Tetragon/Falco) independent of the agent's self-report; flags undeclared file access / egress as a divergence IOC (C3, W1 step 9).
 
 Every integration is **offline by default** (in-memory backends, no third-party imports) so
 the whole suite and CI stay dependency-free and deterministic; the real backends
@@ -179,7 +180,7 @@ offline mode (which is why the spec chose it).
 | Workload identity | HMAC-signed SVID dataclass | SPIRE SVID (X.509/JWT) + Keylime TPM attestation |
 | Artifact signing | HMAC over digest map | cosign signatures over an OCI image manifest |
 | Policy engine | compact Python evaluator | OPA (`policy/constitution.rego`) or Cedar, signed bundle + TTL |
-| Sandbox | in-process sandbox + single-use cred | gVisor/Kata; Tetragon/Falco eBPF for kernel ground truth |
+| Sandbox / runtime sensor | in-process sandbox + self-reported attestation | gVisor/Kata; Tetragon/Falco eBPF ground truth — ✅ [`integrations/ebpf/`](aata_prototype/integrations/ebpf/) |
 | WORM store | in-memory hash-chain | immudb / S3 Object-Lock + Merkle anchoring — ✅ [`integrations/worm/`](aata_prototype/integrations/worm/) |
 | Bus / store-and-forward | direct ledger writes | NATS JetStream leaf nodes — ✅ [`integrations/nats/`](aata_prototype/integrations/nats/) |
 | Telemetry / observability | direct in-process signals | OTel GenAI spans → collector — ✅ [`integrations/otel/`](aata_prototype/integrations/otel/) |
