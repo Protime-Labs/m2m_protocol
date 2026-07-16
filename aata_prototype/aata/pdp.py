@@ -28,7 +28,11 @@ from typing import Any
 from .capability import ACTUATION_CLASSES, Token
 
 # Which actuation classes are "kinetic/irreversible" -> fail-closed on error.
-IRREVERSIBLE = {"financial", "kinetic"}
+# Derived from the defensible per-class rubric in `irreversibility.py` (spec 10.11) rather
+# than hardcoded -- reproduces the legacy {financial, kinetic} set, now as a threshold on a
+# graded, per-tool-extensible score.
+from .irreversibility import derive_irreversible_classes
+IRREVERSIBLE = derive_irreversible_classes()
 
 
 @dataclass
