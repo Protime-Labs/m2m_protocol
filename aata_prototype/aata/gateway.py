@@ -117,23 +117,30 @@ class Gateway:
             + (f"[{'; '.join(canon.notes)}]" if canon.notes else ""))
 
         # Step 3 -- capability verification (offline) + identity/revocation gates.
+        # Each early deny notifies the additive observers before returning: a revoked or
+        # expired identity hammering the gateway must be VISIBLE to telemetry/console
+        # sinks even though it never reaches the PDP or the recorder.
         if not svid.valid(self.authority_key):
             out.reason = "SVID invalid or lease expired"
             out.steps.append("3. capability: DENY (SVID invalid)")
+            self._notify_observers(out, agent_id, tool_name, canon)
             return out
         if self.revocation.is_revoked(agent_id) or self.revocation.is_revoked(token.subject):
             out.reason = "identity is on the revocation list"
             out.steps.append("3. capability: DENY (revoked)")
+            self._notify_observers(out, agent_id, tool_name, canon)
             return out
         if not token.verify(self.authority_key):
             out.reason = "capability token failed offline verification"
             out.steps.append("3. capability: DENY (token seal invalid)")
+            self._notify_observers(out, agent_id, tool_name, canon)
             return out
         out.steps.append("3. capability: token chain verified offline (no callback)")
 
         if tool is None:
             out.reason = f"unknown tool '{tool_name}'"
             out.steps.append("3b. DENY (unknown tool)")
+            self._notify_observers(out, agent_id, tool_name, canon)
             return out
 
         # Step 4-5 -- PDP authorization (local bundle) + fail-closed semantics.
@@ -175,6 +182,7 @@ class Gateway:
                 out.decision = "deny"
                 out.reason = f"recorder unreachable + irreversible class -> fail-closed: {e}"
                 out.steps.append("6-7. recorder UNREACHABLE -> FAIL-CLOSED (no action)")
+                self._notify_observers(out, agent_id, tool_name, canon)
                 return out
             out.decision = "allow-degraded"
             out.reason = f"recorder unreachable; informational class fail-degraded: {e}"
@@ -193,7 +201,9 @@ class Gateway:
         out.resource_attestation = result.attestation.as_dict()
         out.steps.append(f"9. resource attestation: {out.resource_attestation}")
         if result.ok:
-            rec.append("result", {"task_id": task_id, "tool": tool_name,
+            # `agent` makes the result record attributable on its own: task_id defaults
+            # collide across agents, so consumers (console, telemetry) must not rely on it.
+            rec.append("result", {"task_id": task_id, "agent": agent_id, "tool": tool_name,
                                    "attestation": result.attestation.as_dict()})
 
         # Step 10 -- async fan-out (off the hot path): C10 + C11 + autonomous C7.
@@ -206,6 +216,18 @@ class Gateway:
         out.provenance["evidence_seq"] = out.evidence_seq
         out.steps.append("11. response returned provenance-tagged")
         return out
+
+    def _notify_observers(self, out: CallOutcome, agent_id: str, tool_name: str,
+                          canon) -> None:
+        """Run ONLY the additive observers (no timing/behavioral/hygiene accrual).
+
+        Used by the step-3 / fail-closed early-deny paths so every call OUTCOME reaches
+        the observers exactly once: early denies via this helper, everything else via
+        `_async_fanout`. Baselines deliberately do not accrue for calls that failed
+        identity/capability checks -- a rejected identity must not shape cohort baselines.
+        """
+        for observe in self.observers:
+            observe(out, agent_id, tool_name, canon)
 
     # -- Step 10 detail: detection features accrue without adding hot-path latency
     def _async_fanout(self, out: CallOutcome, agent_id: str, tool_name: str,

@@ -57,6 +57,7 @@ def main():
         ("COSIGN TESTS (signed artifact registry C4 -- skips w/o cryptography)", "test_cosign.py"),
         ("CEDAR TESTS (real policy engine C6 + core-PDP parity -- skips w/o cedarpy)", "test_cedar.py"),
         ("END-TO-END REAL (overlay wired on real Cedar+WORM+OTel+eBPF+SPIFFE/cosign -- skips w/o libs)", "test_end_to_end_real.py"),
+        ("CONSOLE TESTS (estate-side capture for the fleet console -- offline)", "test_console.py"),
     ]:
         step(title, "tests", name)
 

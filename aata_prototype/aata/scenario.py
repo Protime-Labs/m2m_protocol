@@ -39,6 +39,11 @@ class Backends:
     pdp_factory: Callable[[bytes, "PolicyBundle"], object] | None = None  # (gov_key, bundle) -> PDP-like
     observers: list = field(default_factory=list)                 # gateway fan-out observers
     attestor: object | None = None                                # real SPIFFE+cosign attestor
+    # Optional wrapper applied to the DDIL reconciliation ledger after construction
+    # (the ledger is created inside DDILController, not via recorder_factory). Without
+    # it, Degraded/Isolated evidence -- including the mode-transition record itself --
+    # is invisible to any recorder-level sink until reconcile().
+    wrap_ledger: Callable[[object], object] | None = None         # (FlightRecorder) -> FlightRecorder-like
     active: list = field(default_factory=list)                    # names of active real backends
 
     def __post_init__(self):
@@ -149,6 +154,8 @@ def build_estate(deterministic: bool = True, backends: Backends | None = None) -
 
     authoritative = backends.recorder()
     ddil = DDILController(authoritative)
+    if backends.wrap_ledger is not None:
+        ddil.ledger = backends.wrap_ledger(ddil.ledger)
     revocation = RevocationList()
     threat = ThreatRegister()
     behavioral = BehavioralAnalytics()
