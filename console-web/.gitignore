@@ -1,0 +1,10 @@
+node_modules/
+.next/
+out/
+.env.local
+.env*.local
+.operator-credentials.txt
+user-setup.mjs
+*.tsbuildinfo
+next-env.d.ts
+.vercel
