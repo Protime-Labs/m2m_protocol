@@ -206,13 +206,17 @@ class Gateway:
             rec.append("result", {"task_id": task_id, "agent": agent_id, "tool": tool_name,
                                    "attestation": result.attestation.as_dict()})
 
+        # Finalize the OUTCOME before fan-out: observers observe what actually happened.
+        # (Previously steps 10/11 ran in the other order, so every observer -- console,
+        # OTel -- saw allowed=False/decision="deny" for successful calls.)
+        out.allowed = result.ok
+        out.decision = "allow" if result.ok else out.decision
+        out.reason = verdict.reason if result.ok else out.reason
+
         # Step 10 -- async fan-out (off the hot path): C10 + C11 + autonomous C7.
         self._async_fanout(out, agent_id, tool_name, tool.base_cost, canon)
 
         # Step 11 -- provenance-tagged response.
-        out.allowed = result.ok
-        out.decision = "allow" if result.ok else out.decision
-        out.reason = verdict.reason if result.ok else out.reason
         out.provenance["evidence_seq"] = out.evidence_seq
         out.steps.append("11. response returned provenance-tagged")
         return out

@@ -95,6 +95,21 @@ def test_isolated_mode_evidence_is_visible_via_teed_ledger():
     assert iso_pre, kinds                              # isolated-mode call evidence, live
 
 
+def test_allowed_calls_are_observed_as_allowed():
+    """Regression (found by the live smoke): observers must see the FINAL outcome --
+    gateway previously ran the fan-out before setting allowed/decision, so every
+    successful call reached the console/OTel as a deny."""
+    d, feed, est = _feed_estate()
+    svid, token = birth(est, "rover-01", {"sensor_read"})
+    out = est.gateway.call("rover-01", svid, token, "sensor_read", "x", confidence=0.95)
+    assert out.allowed
+    reg = _ingest(d)
+    calls = [e for e in reg.events if e["kind"] == "call"]
+    assert calls and calls[-1]["data"]["allowed"] is True, calls
+    assert calls[-1]["data"]["decision"] == "allow"
+    assert reg.agents[(feed.src, "rover-01")].allow_count == 1
+
+
 def test_result_records_are_agent_attributed():
     d, feed, est = _feed_estate()
     svid, token = birth(est, "rover-01", {"sensor_read"})
@@ -188,6 +203,65 @@ def test_stale_posture_uses_wall_clock():
     st = reg.agents[(feed.src, "rover-01")]
     assert st.posture(now_ts=st.last_ts) == "compliant"
     assert st.posture(now_ts=st.last_ts + 10_000) == "stale"
+
+
+# ---- publisher (offline: injected transport, no thread, no network) ----------
+
+def _mk_sink(status=200, fail=False):
+    from console.publish import SupabaseSink
+    calls = []
+
+    def transport(url, anon, body):
+        if fail:
+            raise IOError("net down")
+        calls.append(json.loads(body.decode()))
+        return status
+    s = SupabaseSink("https://x.supabase.co", "anon", "wk",
+                     transport=transport, start_thread=False)
+    return s, calls
+
+
+def test_publisher_batches_and_sends():
+    s, calls = _mk_sink()
+    for i in range(5):
+        s.write(json.dumps({"src": "s", "kind": "call", "agent": f"a{i}",
+                            "seq": None, "t": None, "ts": 1.0, "data": {}}))
+    assert s.flush() == 5 and s.sent == 5 and s.dropped == 0
+    assert len(calls) == 1 and len(calls[0]["batch"]) == 5
+    assert calls[0]["write_key"] == "wk"
+
+
+def test_publisher_keeps_data_on_transport_failure_and_never_raises():
+    s, _ = _mk_sink(fail=True)
+    s.write(json.dumps({"src": "s", "kind": "birth", "agent": "a", "seq": 0,
+                        "t": 1, "ts": 1.0, "data": {}}))
+    assert s.flush() == 0                               # nothing sent...
+    assert s.sent == 0 and "net down" in s.last_error
+    with s._lock:
+        assert len(s._buf) == 1                         # ...but nothing lost (requeued)
+
+
+def test_publisher_overflow_drops_oldest_with_counter():
+    import console.publish as pub
+    s, _ = _mk_sink(fail=True)
+    for i in range(pub.BUFFER_MAX + 7):
+        s.write(f'{{"i":{i}}}')
+    assert s.dropped == 7
+    with s._lock:
+        assert len(s._buf) == pub.BUFFER_MAX
+        assert json.loads(s._buf[0])["i"] == 7          # oldest dropped, newest kept
+
+
+def test_publisher_disabled_without_env():
+    from console.publish import enabled, sink_from_env
+    saved = {k: os.environ.pop(k, None)
+             for k in ("AATA_CONSOLE_URL", "AATA_CONSOLE_ANON", "AATA_CONSOLE_WRITE_KEY")}
+    try:
+        assert not enabled() and sink_from_env() is None
+    finally:
+        for k, v in saved.items():
+            if v is not None:
+                os.environ[k] = v
 
 
 # ---- runner ------------------------------------------------------------------
