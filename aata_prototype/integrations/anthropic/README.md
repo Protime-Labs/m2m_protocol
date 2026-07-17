@@ -4,6 +4,10 @@ Slice 1 of the "real system" path: run **real Claude agents whose every tool cal
 transits the C1 gateway**, so the AATA overlay governs genuine model behavior — while
 the core stays dependency-free, offline, and deterministic.
 
+> **New here?** Start with the step-by-step
+> [agent onboarding guide](../../docs/agent-onboarding.md) — zero to one governed Claude
+> agent with a verifiable evidence trail.
+
 ```bash
 # offline default (no key, no deps): the governed path via a deterministic illustration
 python demos/demo_llm_agent.py

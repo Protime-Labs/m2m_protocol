@@ -71,6 +71,12 @@ pip install -e ".[cedar]"          # or a single backend by name (cedar|biscuit|
 python demos/demo_all_real.py      # the overlay running end-to-end on the real backends
 ```
 
+### Onboard your first agent
+
+The step-by-step guide — mental model, W2 birth, governed run with a local
+`ANTHROPIC_API_KEY`, evidence verification, and a keyless-runnable complete script:
+[**aata_prototype/docs/agent-onboarding.md**](aata_prototype/docs/agent-onboarding.md).
+
 ### Launch the evidence console
 
 ```bash
